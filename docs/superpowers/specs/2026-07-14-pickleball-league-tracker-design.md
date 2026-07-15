@@ -41,6 +41,9 @@ tournaments
   name                    text
   num_courts              int
   match_duration_minutes  int
+  match_format            text  -- 'singles' | 'doubles'
+  team_mode               text nullable  -- 'fixed' | 'rotating', only set when match_format = 'doubles'
+  num_rounds              int nullable   -- only set for doubles + team_mode = 'rotating' (admin-chosen at setup)
   status                  text  -- 'setup' | 'scheduled' | 'in_progress' | 'completed'
   created_at              timestamp
 
@@ -52,23 +55,38 @@ tournament_participants
 matches
   id                uuid pk
   tournament_id     uuid fk -> tournaments
-  player1_id        uuid fk -> players
-  player2_id        uuid fk -> players
   court_number      int
-  round_number      int             -- which round of the round-robin rotation
-  player1_score     int nullable
-  player2_score     int nullable
+  round_number      int             -- which round of the round-robin (or rotating doubles) schedule
+  side1_score       int nullable
+  side2_score       int nullable
   status            text            -- 'scheduled' | 'final'
   played_at         timestamp nullable
+
+match_participants
+  match_id          uuid fk -> matches
+  player_id         uuid fk -> players
+  side              int             -- 1 or 2
+  primary key (match_id, player_id)
 ```
 
-No denormalized win/loss counters or rating-history table — win %, wins, streak, and trend are computed at read time by querying `matches`. This is fast enough at club-league scale and keeps the model simple (no risk of counters drifting out of sync).
+`match_participants` holds 2 rows per match for singles (one per side) or 4 rows per match for doubles (two per side) — this lets both formats share the same `matches` table and the same win/loss/streak queries without a schema split. There's no separate `teams` table: for fixed-team doubles, the pairing chosen at setup is applied directly when generating each round's matches; for rotating doubles, pairings are recomputed per round and only ever exist as rows in `match_participants`.
 
-## Round-Robin Scheduling Algorithm
+No denormalized win/loss counters or rating-history table — wins, win %, streak, and trend are computed at read time by querying `matches` joined through `match_participants`. A doubles win/loss counts individually for both players on that side, in the same combined record as their singles results (one overall win/loss number per player, not split by format). This is fast enough at club-league scale and keeps the model simple (no risk of counters drifting out of sync).
 
-Standard **circle method**: with N participants (add one "bye" placeholder if N is odd), fix one player and rotate the rest around them to produce N-1 (or N) rounds, each round containing floor(N/2) matches where every player appears at most once. Within each round, matches are assigned to courts in order (`court_number = match index mod num_courts`); if a round has more matches than courts, later matches in that round queue for the next available court slot. This guarantees every participant plays every other participant exactly once, matching the prototype's "Schedule Preview" (`n·(n-1)/2` total matches, estimated hours = total matches ÷ courts × match duration).
+## Match Scheduling Algorithms
 
-All matches are created with `status = 'scheduled'` when "Generate Bracket" runs. A tournament flips to `completed` once every one of its matches has `status = 'final'`.
+Round Robin Setup gets a **Singles / Doubles** toggle (`match_format`). Doubles adds a second choice: **Fixed teams** (admin pairs participants into teams before generating) or **Rotating partners** (admin just picks participants; partners reshuffle every round).
+
+### Singles — circle method
+With N participants (add one "bye" placeholder if N is odd), fix one player and rotate the rest around them to produce N-1 (or N) rounds, each round containing floor(N/2) matches where every player appears at most once. Within each round, matches are assigned to courts in order (`court_number = match index mod num_courts`); if a round has more matches than courts, later matches in that round queue for the next available court slot. This guarantees every participant plays every other participant exactly once, matching the prototype's "Schedule Preview" (`n·(n-1)/2` total matches, estimated hours = total matches ÷ courts × match duration).
+
+### Doubles, fixed teams — circle method at the team level
+At setup, the admin groups the selected participants into 2-player teams. The same circle method above then runs treating each team as a single unit, so every team plays every other team exactly once. Total matches = `t·(t-1)/2` where `t` is the number of teams.
+
+### Doubles, rotating partners — best-effort round shuffle
+The admin sets **Number of Rounds** at setup (a reasonable default is suggested, e.g. `participants / 4` rounded, but it's editable). For each round, players are randomly split into groups of 4 (with byes if participant count isn't divisible by 4) and each group into two 2-player teams, producing one match per group. The shuffle is greedy: it tracks which pairs have already been partners and which pairs have already been opponents in prior rounds of the same tournament, and prefers combinations that minimize repeats — not a guaranteed-optimal combinatorial design, but avoids obvious repeats where alternatives exist. Matches are assigned to courts the same way as singles (`match index mod num_courts` within the round).
+
+All matches (any format) are created with `status = 'scheduled'` when "Generate Bracket" runs. A tournament flips to `completed` once every one of its matches has `status = 'final'`.
 
 ## Pages & Navigation
 
@@ -84,13 +102,14 @@ Nav: `Dashboard | Tournaments | Standings | Players`
 List of all tournaments (name, status, participant count, created date), with a "Create Tournament" button.
 
 ### Round Robin Setup (`/tournaments/new`)
-- Parameters: tournament name, number of courts, match duration
+- Parameters: tournament name, number of courts, match duration, Singles/Doubles toggle
+- If Doubles: Fixed Teams / Rotating Partners choice; Fixed Teams adds a team-pairing step in the participants panel; Rotating Partners adds a "Number of Rounds" field (defaulted, editable)
 - Participants: multi-select from existing players, plus an inline "add new player" (name + DUPR rating) for people not yet in the system
-- Live Schedule Preview: participant count, total matches (`n·(n-1)/2`), estimated duration
-- "Generate Bracket" runs the round-robin algorithm above and creates the tournament + participants + all matches
+- Live Schedule Preview: participant count (or team count), total matches, estimated duration — computed per the relevant algorithm above
+- "Generate Bracket" runs the appropriate scheduling algorithm and creates the tournament + participants + all matches
 
 ### Tournament Detail (`/tournaments/[id]`)
-Generated schedule grouped by round and court. Inline score entry (single score per side) per match; entering a score sets that match to `final` and stamps `played_at`. Tournament status flips to `completed` once all matches are final.
+Generated schedule grouped by round and court, showing both players on each side for doubles matches. Inline score entry (single score per side) per match; entering a score sets that match to `final` and stamps `played_at`. Tournament status flips to `completed` once all matches are final.
 
 ### Standings (`/standings`)
 - Sort control: **Wins** (default) or **Win %** — no DUPR-based sort
