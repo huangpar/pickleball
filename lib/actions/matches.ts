@@ -54,7 +54,10 @@ export async function recordScore(matchId: string, formData: FormData): Promise<
 function safeRevalidatePath(path: string): void {
   try {
     revalidatePath(path);
-  } catch {
-    // No-op outside a Next.js request context (e.g. tests).
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Invariant: static generation store missing")) {
+      return; // No-op outside a Next.js request context (e.g. tests).
+    }
+    throw error;
   }
 }
