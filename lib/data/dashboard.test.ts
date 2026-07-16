@@ -9,6 +9,7 @@ import {
   getUpcomingMatches,
   getTopPerformer,
 } from "./dashboard";
+import { getStandings } from "./standings";
 
 describe("dashboard data layer", () => {
   const insertedPlayerIds: string[] = [];
@@ -112,7 +113,24 @@ describe("dashboard data layer", () => {
     expect(upcomingIds).toContain(scheduledMatch.id);
     expect(upcomingIds).not.toContain(finalMatch.id);
 
+    // getTopPerformer computes over the ENTIRE shared DB (via getStandings/getAllPlayers),
+    // not just this test's fixtures, so other persistent data (e.g. a player with a
+    // perfect record and >= 3 matches from another test/task) could tie or outrank p1.
+    // Assert p1's own standings row directly rather than assuming it's the unique winner.
+    const standings = await getStandings();
+    const p1Row = standings.find((s) => s.id === p1.id);
+    expect(p1Row).toMatchObject({ wins: 3, matchesPlayed: 3, winPercentage: 100 });
+
+    // Still exercise getTopPerformer's filtering/sorting logic for real, but tolerantly:
+    // p1 has a perfect 100% record with >= 3 matches, so no other player can beat it
+    // (only tie it). Whoever getTopPerformer returns must be at least as good as p1,
+    // and internally consistent with the standings computation.
     const topPerformer = await getTopPerformer(3);
-    expect(topPerformer?.id).toBe(p1.id); // 3-0 record, only eligible player with >= 3 matches
+    expect(topPerformer).not.toBeNull();
+    expect(topPerformer!.winPercentage).toBeGreaterThanOrEqual(p1Row!.winPercentage);
+    const topRow = standings.find((s) => s.id === topPerformer!.id);
+    expect(topRow).toBeDefined();
+    expect(topRow!.matchesPlayed).toBeGreaterThanOrEqual(3);
+    expect(topRow!.winPercentage).toBe(topPerformer!.winPercentage);
   });
 });

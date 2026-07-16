@@ -57,4 +57,10 @@ describe("standingsToCsv", () => {
     const csv = standingsToCsv(standings);
     expect(csv.split("\n")[1]).toBe('1,"Smith, Jr.",4.00,1,50,2');
   });
+
+  it("quotes player names containing a newline", () => {
+    const standings: StandingRow[] = [{ ...row("a", 1), name: "Smith\nJr." }];
+    const csv = standingsToCsv(standings);
+    expect(csv).toContain('"Smith\nJr."');
+  });
 });
