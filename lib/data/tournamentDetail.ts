@@ -1,6 +1,9 @@
 import { db } from "@/lib/db/client";
 import { tournaments, matches, matchParticipants, players, tournamentParticipants } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
+import { getPlayerMatchOutcomes } from "@/lib/data/players";
+import { computeWins, computeWinPercentage, computeTrend } from "@/lib/stats";
+import type { StandingRow } from "@/lib/standings";
 
 export interface MatchDetail {
   id: string;
@@ -111,4 +114,29 @@ export async function getTournamentDetail(tournamentId: string): Promise<Tournam
     .sort((a, b) => a.roundNumber - b.roundNumber);
 
   return { ...base, matches: matchDetails, byes };
+}
+
+export async function getTournamentStandings(tournamentId: string): Promise<StandingRow[]> {
+  const participants = await getTournamentParticipants(tournamentId);
+  if (participants.length === 0) return [];
+
+  const matchRows = await db.select({ id: matches.id }).from(matches).where(eq(matches.tournamentId, tournamentId));
+  const tournamentMatchIds = new Set(matchRows.map((m) => m.id));
+
+  const rows: StandingRow[] = [];
+  for (const participant of participants) {
+    const allOutcomes = await getPlayerMatchOutcomes(participant.id);
+    const outcomes = allOutcomes.filter((o) => tournamentMatchIds.has(o.matchId));
+    rows.push({
+      id: participant.id,
+      name: participant.name,
+      duprRating: participant.duprRating,
+      wins: computeWins(outcomes),
+      matchesPlayed: outcomes.length,
+      winPercentage: computeWinPercentage(outcomes),
+      trend: computeTrend(outcomes),
+    });
+  }
+
+  return rows.sort((a, b) => b.wins - a.wins);
 }
