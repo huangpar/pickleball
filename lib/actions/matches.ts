@@ -6,6 +6,14 @@ import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function recordScore(matchId: string, formData: FormData): Promise<void> {
+  const [match] = await db.select().from(matches).where(eq(matches.id, matchId));
+  if (!match) throw new Error("Match not found");
+
+  const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, match.tournamentId));
+  if (tournament?.status === "completed") {
+    throw new Error("This tournament has ended — scores can no longer be edited");
+  }
+
   const side1Score = Number(formData.get("side1Score"));
   const side2Score = Number(formData.get("side2Score"));
 
@@ -18,9 +26,6 @@ export async function recordScore(matchId: string, formData: FormData): Promise<
   if (side1Score === side2Score) {
     throw new Error("Scores cannot be tied");
   }
-
-  const [match] = await db.select().from(matches).where(eq(matches.id, matchId));
-  if (!match) throw new Error("Match not found");
 
   await db
     .update(matches)
@@ -42,6 +47,18 @@ export async function recordScore(matchId: string, formData: FormData): Promise<
   }
 
   safeRevalidatePath(`/tournaments/${match.tournamentId}`);
+  safeRevalidatePath("/tournaments");
+  safeRevalidatePath("/");
+}
+
+export async function endTournament(tournamentId: string): Promise<void> {
+  const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
+  if (!tournament) throw new Error("Tournament not found");
+  if (tournament.status === "completed") return;
+
+  await db.update(tournaments).set({ status: "completed" }).where(eq(tournaments.id, tournamentId));
+
+  safeRevalidatePath(`/tournaments/${tournamentId}`);
   safeRevalidatePath("/tournaments");
   safeRevalidatePath("/");
 }

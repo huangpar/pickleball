@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { db } from "@/lib/db/client";
 import { players, tournaments, matches, matchParticipants } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { recordScore } from "./matches";
+import { recordScore, endTournament } from "./matches";
 
 describe("recordScore", () => {
   const insertedPlayerIds: string[] = [];
@@ -84,5 +84,77 @@ describe("recordScore", () => {
     formData.set("side1Score", "5");
     formData.set("side2Score", "5");
     await expect(recordScore(match.id, formData)).rejects.toThrow("Scores cannot be tied");
+  });
+
+  it("rejects recording a score once the tournament has been completed", async () => {
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Completed Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "completed" })
+      .returning();
+    tournamentIds.push(tournament.id);
+    const [match] = await db
+      .insert(matches)
+      .values({ tournamentId: tournament.id, courtNumber: 1, roundNumber: 1, status: "scheduled" })
+      .returning();
+    matchIds.push(match.id);
+
+    const formData = new FormData();
+    formData.set("side1Score", "11");
+    formData.set("side2Score", "7");
+    await expect(recordScore(match.id, formData)).rejects.toThrow(
+      "This tournament has ended — scores can no longer be edited"
+    );
+
+    const [unchangedMatch] = await db.select().from(matches).where(eq(matches.id, match.id));
+    expect(unchangedMatch.status).toBe("scheduled");
+    expect(unchangedMatch.side1Score).toBeNull();
+  });
+});
+
+describe("endTournament", () => {
+  const tournamentIds: string[] = [];
+  const matchIds: string[] = [];
+
+  afterAll(async () => {
+    for (const id of matchIds) await db.delete(matches).where(eq(matches.id, id));
+    for (const id of tournamentIds) await db.delete(tournaments).where(eq(tournaments.id, id));
+  });
+
+  it("force-completes a tournament even with unplayed matches remaining", async () => {
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__End Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "in_progress" })
+      .returning();
+    tournamentIds.push(tournament.id);
+    const [match] = await db
+      .insert(matches)
+      .values({ tournamentId: tournament.id, courtNumber: 1, roundNumber: 1, status: "scheduled" })
+      .returning();
+    matchIds.push(match.id);
+
+    await endTournament(tournament.id);
+
+    const [updated] = await db.select().from(tournaments).where(eq(tournaments.id, tournament.id));
+    expect(updated.status).toBe("completed");
+
+    const [unchangedMatch] = await db.select().from(matches).where(eq(matches.id, match.id));
+    expect(unchangedMatch.status).toBe("scheduled"); // left as-is, not force-scored
+  });
+
+  it("is idempotent when called on an already-completed tournament", async () => {
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Already Ended__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "completed" })
+      .returning();
+    tournamentIds.push(tournament.id);
+
+    await expect(endTournament(tournament.id)).resolves.toBeUndefined();
+
+    const [updated] = await db.select().from(tournaments).where(eq(tournaments.id, tournament.id));
+    expect(updated.status).toBe("completed");
+  });
+
+  it("throws for a nonexistent tournament", async () => {
+    await expect(endTournament("00000000-0000-0000-0000-000000000000")).rejects.toThrow("Tournament not found");
   });
 });
