@@ -77,6 +77,9 @@ export async function generateBracket(formData: FormData): Promise<string> {
     ]);
   }
 
+  safeRevalidatePath("/tournaments");
+  safeRevalidatePath("/");
+
   return tournament.id;
 }
 
