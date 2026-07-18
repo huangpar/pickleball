@@ -1,14 +1,14 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import { Nav } from "./Nav";
+import { BottomNav } from "./BottomNav";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/standings",
+  usePathname: () => "/players",
 }));
 
-describe("Nav", () => {
+describe("BottomNav", () => {
   it("renders exactly the four required nav links", () => {
-    render(<Nav />);
+    render(<BottomNav />);
     const nav = screen.getByRole("navigation");
     const expected = ["Dashboard", "Tournaments", "Standings", "Players"];
     expected.forEach((label) => {
@@ -18,15 +18,16 @@ describe("Nav", () => {
   });
 
   it("highlights the link matching the current path", () => {
-    render(<Nav />);
-    expect(screen.getByRole("link", { name: "Standings" }).className).toContain("bg-surface-container-high");
+    render(<BottomNav />);
+    expect(screen.getByRole("link", { name: "Players" }).className).toContain("bg-surface-container-high");
     expect(screen.getByRole("link", { name: "Dashboard" }).className).not.toContain("bg-surface-container-high");
   });
 
-  it("hides the link row below the md breakpoint and shows it at md and above", () => {
-    render(<Nav />);
+  it("is hidden at md and above, and fixed to the bottom of the viewport below md", () => {
+    render(<BottomNav />);
     const nav = screen.getByRole("navigation");
-    expect(nav.className).toContain("hidden");
-    expect(nav.className).toContain("md:flex");
+    expect(nav.className).toContain("md:hidden");
+    expect(nav.className).toContain("fixed");
+    expect(nav.className).toContain("bottom-0");
   });
 });
