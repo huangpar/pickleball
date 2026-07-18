@@ -13,6 +13,9 @@ export async function recordScore(matchId: string, formData: FormData): Promise<
   if (tournament?.status === "completed") {
     throw new Error("This tournament has ended — scores can no longer be edited");
   }
+  if (tournament?.status !== "in_progress") {
+    throw new Error("Start the tournament before logging scores");
+  }
 
   const side1Score = Number(formData.get("side1Score"));
   const side2Score = Number(formData.get("side2Score"));
@@ -39,11 +42,6 @@ export async function recordScore(matchId: string, formData: FormData): Promise<
 
   if (stillScheduled.length === 0) {
     await db.update(tournaments).set({ status: "completed" }).where(eq(tournaments.id, match.tournamentId));
-  } else {
-    await db
-      .update(tournaments)
-      .set({ status: "in_progress" })
-      .where(and(eq(tournaments.id, match.tournamentId), eq(tournaments.status, "scheduled")));
   }
 
   safeRevalidatePath(`/tournaments/${match.tournamentId}`);

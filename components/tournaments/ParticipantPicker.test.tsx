@@ -5,8 +5,8 @@ import { ParticipantPicker } from "./ParticipantPicker";
 describe("ParticipantPicker", () => {
   it("uses a single-column grid below md and two columns at md and above", () => {
     const players = [
-      { id: "1", name: "Alex Sterling", duprRating: "4.50" },
-      { id: "2", name: "Ben Rivera", duprRating: "4.20" },
+      { id: "1", name: "Alex Sterling" },
+      { id: "2", name: "Ben Rivera" },
     ];
     render(
       <ParticipantPicker

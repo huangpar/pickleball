@@ -36,7 +36,6 @@ export function PlayerListItem({
       <Link href={`/players/${player.id}`} className="flex items-center gap-3">
         <Avatar name={player.name} size="sm" />
         <span className="font-body font-medium">{player.name}</span>
-        <span className="font-mono text-xs text-on-surface-variant">{player.duprRating} DUPR</span>
       </Link>
       <Button variant="tertiary" onClick={() => setIsEditing(true)}>
         Edit

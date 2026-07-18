@@ -23,9 +23,9 @@ describe("getTournamentStandings", () => {
   });
 
   it("only counts matches from the requested tournament, even for a player who played in two", async () => {
-    const [p1] = await db.insert(players).values({ name: "__TStandings P1__", duprRating: "4.50" }).returning();
-    const [p2] = await db.insert(players).values({ name: "__TStandings P2__", duprRating: "4.00" }).returning();
-    const [p3] = await db.insert(players).values({ name: "__TStandings P3__", duprRating: "4.00" }).returning();
+    const [p1] = await db.insert(players).values({ name: "__TStandings P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__TStandings P2__" }).returning();
+    const [p3] = await db.insert(players).values({ name: "__TStandings P3__" }).returning();
     insertedPlayerIds.push(p1.id, p2.id, p3.id);
 
     const [tournamentA] = await db

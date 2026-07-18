@@ -3,21 +3,20 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { EditPlayerForm } from "./EditPlayerForm";
 
 describe("EditPlayerForm", () => {
-  const player = { id: "p1", name: "Alex Sterling", duprRating: "4.80" };
+  const player = { id: "p1", name: "Alex Sterling" };
 
-  it("pre-fills the current name and rating, and calls onSubmit with edits", async () => {
+  it("pre-fills the current name, and calls onSubmit with edits", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<EditPlayerForm player={player} onSubmit={onSubmit} onCancel={vi.fn()} />);
 
     expect(screen.getByLabelText("Name")).toHaveValue("Alex Sterling");
-    expect(screen.getByLabelText("DUPR Rating")).toHaveValue(4.8);
 
-    fireEvent.change(screen.getByLabelText("DUPR Rating"), { target: { value: "5.0" } });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Alex Sterling New" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     const formData = onSubmit.mock.calls[0][0] as FormData;
-    expect(formData.get("duprRating")).toBe("5.0");
+    expect(formData.get("name")).toBe("Alex Sterling New");
   });
 
   it("calls onCancel when Cancel is clicked", () => {

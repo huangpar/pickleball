@@ -1,27 +1,35 @@
 import { db } from "@/lib/db/client";
-import { players, matches, matchParticipants } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { players, matches, matchParticipants, tournaments } from "@/lib/db/schema";
+import { eq, and, gte, lte, type SQL } from "drizzle-orm";
 import type { MatchOutcome } from "@/lib/stats";
 
 export interface PlayerRow {
   id: string;
   name: string;
-  duprRating: string;
+}
+
+export interface DateRange {
+  from?: Date;
+  to?: Date;
 }
 
 export async function getAllPlayers(): Promise<PlayerRow[]> {
-  return db.select({ id: players.id, name: players.name, duprRating: players.duprRating }).from(players);
+  return db.select({ id: players.id, name: players.name }).from(players);
 }
 
 export async function getPlayerById(id: string): Promise<PlayerRow | null> {
   const rows = await db
-    .select({ id: players.id, name: players.name, duprRating: players.duprRating })
+    .select({ id: players.id, name: players.name })
     .from(players)
     .where(eq(players.id, id));
   return rows[0] ?? null;
 }
 
-export async function getPlayerMatchOutcomes(playerId: string): Promise<MatchOutcome[]> {
+export async function getPlayerMatchOutcomes(playerId: string, dateRange?: DateRange): Promise<MatchOutcome[]> {
+  const conditions: SQL[] = [eq(matchParticipants.playerId, playerId), eq(matches.status, "final")];
+  if (dateRange?.from) conditions.push(gte(tournaments.startedAt, dateRange.from));
+  if (dateRange?.to) conditions.push(lte(tournaments.startedAt, dateRange.to));
+
   const rows = await db
     .select({
       matchId: matches.id,
@@ -32,7 +40,8 @@ export async function getPlayerMatchOutcomes(playerId: string): Promise<MatchOut
     })
     .from(matchParticipants)
     .innerJoin(matches, eq(matchParticipants.matchId, matches.id))
-    .where(and(eq(matchParticipants.playerId, playerId), eq(matches.status, "final")));
+    .innerJoin(tournaments, eq(matches.tournamentId, tournaments.id))
+    .where(and(...conditions));
 
   return rows
     .filter((r) => r.playedAt !== null && r.side1Score !== null && r.side2Score !== null)

@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { getTournamentDetail, getTournamentStandings, type MatchDetail } from "@/lib/data/tournamentDetail";
 import { recordScore, endTournament } from "@/lib/actions/matches";
+import { startTournament } from "@/lib/actions/tournaments";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { MatchScoreForm } from "@/components/tournaments/MatchScoreForm";
 import { EndTournamentButton } from "@/components/tournaments/EndTournamentButton";
+import { StartTournamentButton } from "@/components/tournaments/StartTournamentButton";
 import { TournamentStandingsTable } from "@/components/tournaments/TournamentStandingsTable";
 
 import { Tabs } from "@/components/Tabs";
@@ -23,6 +25,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
   const byesByRound = new Map(tournament.byes.map((b) => [b.roundNumber, b.playerNames]));
   const isCompleted = tournament.status === "completed";
+  const isScheduled = tournament.status === "scheduled";
+  const canScore = tournament.status === "in_progress";
 
   return (
     <main className="max-w-container-max mx-auto px-gutter py-8 space-y-8">
@@ -30,7 +34,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         <h1 className="font-headline text-3xl font-bold">{tournament.name}</h1>
         <div className="flex items-center gap-3">
           <Badge>{tournament.status.replace("_", " ")}</Badge>
-          {!isCompleted && <EndTournamentButton onEnd={endTournament.bind(null, tournament.id)} />}
+          {isScheduled && <StartTournamentButton onStart={startTournament.bind(null, tournament.id)} />}
+          {!isCompleted && !isScheduled && <EndTournamentButton onEnd={endTournament.bind(null, tournament.id)} />}
         </div>
       </div>
 
@@ -52,7 +57,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                       side2PlayerNames={match.side2PlayerNames}
                       side1Score={match.side1Score}
                       side2Score={match.side2Score}
-                      disabled={isCompleted}
+                      disabled={!canScore}
                       onSubmit={recordScore.bind(null, match.id)}
                     />
                   </Card>

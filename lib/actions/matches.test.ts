@@ -20,14 +20,14 @@ describe("recordScore", () => {
     for (const id of insertedPlayerIds) await db.delete(players).where(eq(players.id, id));
   });
 
-  it("flips the tournament to in_progress on the first score, then completed once all matches are final", async () => {
-    const [p1] = await db.insert(players).values({ name: "__Score P1__", duprRating: "4.00" }).returning();
-    const [p2] = await db.insert(players).values({ name: "__Score P2__", duprRating: "4.00" }).returning();
+  it("stays in_progress after the first score, then completes once all matches are final", async () => {
+    const [p1] = await db.insert(players).values({ name: "__Score P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Score P2__" }).returning();
     insertedPlayerIds.push(p1.id, p2.id);
 
     const [tournament] = await db
       .insert(tournaments)
-      .values({ name: "__Score Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .values({ name: "__Score Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "in_progress", startedAt: new Date() })
       .returning();
     tournamentIds.push(tournament.id);
 
@@ -71,7 +71,7 @@ describe("recordScore", () => {
   it("rejects a tied score", async () => {
     const [tournament] = await db
       .insert(tournaments)
-      .values({ name: "__Tie Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .values({ name: "__Tie Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "in_progress", startedAt: new Date() })
       .returning();
     tournamentIds.push(tournament.id);
     const [match] = await db
@@ -84,6 +84,28 @@ describe("recordScore", () => {
     formData.set("side1Score", "5");
     formData.set("side2Score", "5");
     await expect(recordScore(match.id, formData)).rejects.toThrow("Scores cannot be tied");
+  });
+
+  it("rejects recording a score before the tournament has been started", async () => {
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Unstarted Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .returning();
+    tournamentIds.push(tournament.id);
+    const [match] = await db
+      .insert(matches)
+      .values({ tournamentId: tournament.id, courtNumber: 1, roundNumber: 1, status: "scheduled" })
+      .returning();
+    matchIds.push(match.id);
+
+    const formData = new FormData();
+    formData.set("side1Score", "11");
+    formData.set("side2Score", "7");
+    await expect(recordScore(match.id, formData)).rejects.toThrow("Start the tournament before logging scores");
+
+    const [unchangedMatch] = await db.select().from(matches).where(eq(matches.id, match.id));
+    expect(unchangedMatch.status).toBe("scheduled");
+    expect(unchangedMatch.side1Score).toBeNull();
   });
 
   it("rejects recording a score once the tournament has been completed", async () => {

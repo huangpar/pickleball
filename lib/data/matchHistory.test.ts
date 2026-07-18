@@ -22,7 +22,7 @@ describe("getPlayerMatchHistory", () => {
     const names = ["__History P1__", "__History P2__", "__History P3__", "__History P4__"];
     const inserted = [];
     for (const name of names) {
-      const [p] = await db.insert(players).values({ name, duprRating: "4.00" }).returning();
+      const [p] = await db.insert(players).values({ name }).returning();
       inserted.push(p);
     }
     insertedPlayerIds.push(...inserted.map((p) => p.id));

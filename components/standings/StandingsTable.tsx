@@ -61,7 +61,6 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
             <tr className="text-left font-mono text-xs text-on-surface-variant uppercase border-b border-surface-container-high">
               <th className="p-4">Rank</th>
               <th className="p-4">Player</th>
-              <th className="p-4">DUPR</th>
               <th className="p-4">Wins</th>
               <th className="p-4">Win %</th>
               <th className="p-4">Matches</th>
@@ -78,7 +77,6 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
                     {row.name}
                   </div>
                 </td>
-                <td className="p-4 font-mono">{row.duprRating}</td>
                 <td className="p-4">{row.wins}</td>
                 <td className="p-4">{row.winPercentage}%</td>
                 <td className="p-4">{row.matchesPlayed}</td>
@@ -98,7 +96,7 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
               <div>
                 <p className="font-body font-medium">{row.name}</p>
                 <p className="font-mono text-xs text-on-surface-variant">
-                  {row.duprRating} DUPR &middot; {row.trend === "up" ? "↑" : row.trend === "down" ? "↓" : "—"}
+                  Trend: {row.trend === "up" ? "↑" : row.trend === "down" ? "↓" : "—"}
                 </p>
               </div>
             </div>

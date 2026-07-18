@@ -32,7 +32,6 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
         <Avatar name={player.name} />
         <div>
           <h1 className="font-headline text-3xl font-bold">{player.name}</h1>
-          <p className="font-mono text-sm text-on-surface-variant">{player.duprRating} DUPR</p>
         </div>
       </div>
 

@@ -1,7 +1,6 @@
 export interface StandingRow {
   id: string;
   name: string;
-  duprRating: string;
   wins: number;
   matchesPlayed: number;
   winPercentage: number;
@@ -24,9 +23,9 @@ export function sortStandings(rows: StandingRow[], sortBy: StandingsSort): Stand
 }
 
 export function standingsToCsv(rows: StandingRow[]): string {
-  const header = "Rank,Player,DUPR Rating,Wins,Win %,Matches Played";
+  const header = "Rank,Player,Wins,Win %,Matches Played";
   const lines = rows.map(
-    (row, i) => `${i + 1},${escapeCsvField(row.name)},${row.duprRating},${row.wins},${row.winPercentage},${row.matchesPlayed}`
+    (row, i) => `${i + 1},${escapeCsvField(row.name)},${row.wins},${row.winPercentage},${row.matchesPlayed}`
   );
   return [header, ...lines].join("\n");
 }

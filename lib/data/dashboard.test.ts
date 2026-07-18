@@ -26,8 +26,8 @@ describe("dashboard data layer", () => {
   });
 
   it("computes stats, activity, recent/upcoming matches, and top performer together", async () => {
-    const [p1] = await db.insert(players).values({ name: "__Dash P1__", duprRating: "4.50" }).returning();
-    const [p2] = await db.insert(players).values({ name: "__Dash P2__", duprRating: "4.00" }).returning();
+    const [p1] = await db.insert(players).values({ name: "__Dash P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Dash P2__" }).returning();
     insertedPlayerIds.push(p1.id, p2.id);
 
     const [tournament] = await db

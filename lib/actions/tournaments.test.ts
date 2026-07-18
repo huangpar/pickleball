@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { db } from "@/lib/db/client";
 import { players, tournaments, tournamentParticipants, matches, matchParticipants } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { generateBracket } from "./tournaments";
+import { generateBracket, startTournament } from "./tournaments";
 
 describe("generateBracket", () => {
   const insertedPlayerIds: string[] = [];
@@ -24,7 +24,7 @@ describe("generateBracket", () => {
   async function insertTestPlayers(count: number): Promise<string[]> {
     const ids: string[] = [];
     for (let i = 0; i < count; i++) {
-      const [p] = await db.insert(players).values({ name: `__Bracket P${i}__`, duprRating: "4.00" }).returning();
+      const [p] = await db.insert(players).values({ name: `__Bracket P${i}__` }).returning();
       ids.push(p.id);
     }
     insertedPlayerIds.push(...ids);
@@ -93,5 +93,45 @@ describe("generateBracket", () => {
     formData.append("participantIds", "only-one-id");
 
     await expect(generateBracket(formData)).rejects.toThrow("Select at least 2 participants");
+  });
+});
+
+describe("startTournament", () => {
+  const tournamentIds: string[] = [];
+
+  afterAll(async () => {
+    for (const id of tournamentIds) await db.delete(tournaments).where(eq(tournaments.id, id));
+  });
+
+  it("moves a scheduled tournament to in_progress and records the start time", async () => {
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Start Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .returning();
+    tournamentIds.push(tournament.id);
+
+    const before = new Date();
+    await startTournament(tournament.id);
+    const after = new Date();
+
+    const [updated] = await db.select().from(tournaments).where(eq(tournaments.id, tournament.id));
+    expect(updated.status).toBe("in_progress");
+    expect(updated.startedAt).not.toBeNull();
+    expect(updated.startedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(updated.startedAt!.getTime()).toBeLessThanOrEqual(after.getTime());
+  });
+
+  it("rejects starting a tournament that has already been started", async () => {
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Already Started__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "in_progress" })
+      .returning();
+    tournamentIds.push(tournament.id);
+
+    await expect(startTournament(tournament.id)).rejects.toThrow("Tournament has already been started");
+  });
+
+  it("throws for a nonexistent tournament", async () => {
+    await expect(startTournament("00000000-0000-0000-0000-000000000000")).rejects.toThrow("Tournament not found");
   });
 });

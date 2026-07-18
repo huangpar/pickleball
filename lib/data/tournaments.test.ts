@@ -17,8 +17,8 @@ describe("getAllTournaments", () => {
   });
 
   it("returns participant counts and orders newest first", async () => {
-    const [p1] = await db.insert(players).values({ name: "__Tournaments P1__", duprRating: "4.00" }).returning();
-    const [p2] = await db.insert(players).values({ name: "__Tournaments P2__", duprRating: "4.00" }).returning();
+    const [p1] = await db.insert(players).values({ name: "__Tournaments P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Tournaments P2__" }).returning();
     insertedPlayerIds.push(p1.id, p2.id);
 
     const [older] = await db

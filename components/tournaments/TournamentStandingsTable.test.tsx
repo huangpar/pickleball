@@ -6,8 +6,8 @@ import type { StandingRow } from "@/lib/standings";
 describe("TournamentStandingsTable", () => {
   it("renders rows already in the order given, ranked from 1", () => {
     const standings: StandingRow[] = [
-      { id: "a", name: "Alex", duprRating: "4.50", wins: 3, matchesPlayed: 3, winPercentage: 100, trend: "up" },
-      { id: "b", name: "Bo", duprRating: "4.00", wins: 1, matchesPlayed: 3, winPercentage: 33.3, trend: "down" },
+      { id: "a", name: "Alex", wins: 3, matchesPlayed: 3, winPercentage: 100, trend: "up" },
+      { id: "b", name: "Bo", wins: 1, matchesPlayed: 3, winPercentage: 33.3, trend: "down" },
     ];
     render(<TournamentStandingsTable standings={standings} />);
 
@@ -25,8 +25,8 @@ describe("TournamentStandingsTable", () => {
 
   it("renders both a desktop table (hidden below md) and a mobile card list (hidden at md and above) with the same rows", () => {
     const standings: StandingRow[] = [
-      { id: "a", name: "Alex", duprRating: "4.50", wins: 3, matchesPlayed: 3, winPercentage: 100, trend: "up" },
-      { id: "b", name: "Bo", duprRating: "4.00", wins: 1, matchesPlayed: 3, winPercentage: 33.3, trend: "down" },
+      { id: "a", name: "Alex", wins: 3, matchesPlayed: 3, winPercentage: 100, trend: "up" },
+      { id: "b", name: "Bo", wins: 1, matchesPlayed: 3, winPercentage: 33.3, trend: "down" },
     ];
     render(<TournamentStandingsTable standings={standings} />);
 

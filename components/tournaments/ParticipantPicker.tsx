@@ -56,9 +56,6 @@ export function ParticipantPicker({
               <span className="font-body">
                 {player.name}
               </span>
-              <span className={`font-mono text-xs ${isSelected ? "text-on-secondary-container/70" : "text-on-surface-variant"}`}>
-                {player.duprRating}
-              </span>
             </label>
           );
         })}

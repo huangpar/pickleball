@@ -5,10 +5,10 @@ import { RoundRobinSetupForm } from "./RoundRobinSetupForm";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const initialPlayers = [
-  { id: "p1", name: "Alex Sterling", duprRating: "4.80" },
-  { id: "p2", name: "Ben Rivera", duprRating: "4.20" },
-  { id: "p3", name: "Chris Jung", duprRating: "3.80" },
-  { id: "p4", name: "Dana Kim", duprRating: "4.00" },
+  { id: "p1", name: "Alex Sterling" },
+  { id: "p2", name: "Ben Rivera" },
+  { id: "p3", name: "Chris Jung" },
+  { id: "p4", name: "Dana Kim" },
 ];
 
 describe("RoundRobinSetupForm", () => {

@@ -22,8 +22,8 @@ describe("getTournamentDetail", () => {
   });
 
   it("returns matches grouped with player names, sorted by round then court", async () => {
-    const [p1] = await db.insert(players).values({ name: "__Detail P1__", duprRating: "4.00" }).returning();
-    const [p2] = await db.insert(players).values({ name: "__Detail P2__", duprRating: "4.00" }).returning();
+    const [p1] = await db.insert(players).values({ name: "__Detail P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Detail P2__" }).returning();
     insertedPlayerIds.push(p1.id, p2.id);
 
     const [tournament] = await db
@@ -60,8 +60,8 @@ describe("getTournamentDetail", () => {
   });
 
   it("returns the full participant roster from tournament_participants", async () => {
-    const [p1] = await db.insert(players).values({ name: "__Roster P1__", duprRating: "4.00" }).returning();
-    const [p2] = await db.insert(players).values({ name: "__Roster P2__", duprRating: "4.00" }).returning();
+    const [p1] = await db.insert(players).values({ name: "__Roster P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Roster P2__" }).returning();
     insertedPlayerIds.push(p1.id, p2.id);
 
     const [tournament] = await db
@@ -82,9 +82,9 @@ describe("getTournamentDetail", () => {
   });
 
   it("computes byes for roster participants without a match in a round", async () => {
-    const [p1] = await db.insert(players).values({ name: "__Bye P1__", duprRating: "4.00" }).returning();
-    const [p2] = await db.insert(players).values({ name: "__Bye P2__", duprRating: "4.00" }).returning();
-    const [p3] = await db.insert(players).values({ name: "__Bye P3__", duprRating: "4.00" }).returning();
+    const [p1] = await db.insert(players).values({ name: "__Bye P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Bye P2__" }).returning();
+    const [p3] = await db.insert(players).values({ name: "__Bye P3__" }).returning();
     insertedPlayerIds.push(p1.id, p2.id, p3.id);
 
     const [tournament] = await db

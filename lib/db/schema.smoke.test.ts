@@ -13,12 +13,11 @@ describe("db smoke test", () => {
   it("inserts and reads back a player", async () => {
     const [inserted] = await db
       .insert(players)
-      .values({ name: testName, duprRating: "3.50" })
+      .values({ name: testName })
       .returning();
     expect(inserted.name).toBe(testName);
 
     const rows = await db.select().from(players).where(eq(players.name, testName));
     expect(rows).toHaveLength(1);
-    expect(rows[0].duprRating).toBe("3.50");
   });
 });

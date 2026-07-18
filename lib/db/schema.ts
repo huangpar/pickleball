@@ -3,7 +3,6 @@ import { pgTable, uuid, text, integer, numeric, timestamp, primaryKey } from "dr
 export const players = pgTable("players", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
-  duprRating: numeric("dupr_rating", { precision: 3, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -19,6 +18,7 @@ export const tournaments = pgTable("tournaments", {
     .notNull()
     .default("setup"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  startedAt: timestamp("started_at"),
 });
 
 export const tournamentParticipants = pgTable(

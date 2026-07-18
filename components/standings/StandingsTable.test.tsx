@@ -4,9 +4,9 @@ import { StandingsTable } from "./StandingsTable";
 import type { StandingRow } from "@/lib/standings";
 
 const standings: StandingRow[] = [
-  { id: "a", name: "Alex", duprRating: "4.50", wins: 5, matchesPlayed: 10, winPercentage: 90, trend: "flat" },
-  { id: "b", name: "Bo", duprRating: "4.00", wins: 8, matchesPlayed: 9, winPercentage: 50, trend: "up" },
-  { id: "c", name: "Cy", duprRating: "3.80", wins: 2, matchesPlayed: 4, winPercentage: 99, trend: "down" },
+  { id: "a", name: "Alex", wins: 5, matchesPlayed: 10, winPercentage: 90, trend: "flat" },
+  { id: "b", name: "Bo", wins: 8, matchesPlayed: 9, winPercentage: 50, trend: "up" },
+  { id: "c", name: "Cy", wins: 2, matchesPlayed: 4, winPercentage: 99, trend: "down" },
 ];
 
 describe("StandingsTable", () => {

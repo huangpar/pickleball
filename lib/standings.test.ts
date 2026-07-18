@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { rankPlayerByWins, sortStandings, standingsToCsv, type StandingRow } from "./standings";
 
 function row(id: string, wins: number): StandingRow {
-  return { id, name: id, duprRating: "4.00", wins, matchesPlayed: wins + 1, winPercentage: 50, trend: "flat" };
+  return { id, name: id, wins, matchesPlayed: wins + 1, winPercentage: 50, trend: "flat" };
 }
 
 describe("rankPlayerByWins", () => {
@@ -47,15 +47,15 @@ describe("standingsToCsv", () => {
     const standings = [row("a", 10), row("b", 5)];
     const csv = standingsToCsv(standings);
     const lines = csv.split("\n");
-    expect(lines[0]).toBe("Rank,Player,DUPR Rating,Wins,Win %,Matches Played");
-    expect(lines[1]).toBe("1,a,4.00,10,50,11");
-    expect(lines[2]).toBe("2,b,4.00,5,50,6");
+    expect(lines[0]).toBe("Rank,Player,Wins,Win %,Matches Played");
+    expect(lines[1]).toBe("1,a,10,50,11");
+    expect(lines[2]).toBe("2,b,5,50,6");
   });
 
   it("quotes player names containing a comma", () => {
     const standings: StandingRow[] = [{ ...row("a", 1), name: "Smith, Jr." }];
     const csv = standingsToCsv(standings);
-    expect(csv.split("\n")[1]).toBe('1,"Smith, Jr.",4.00,1,50,2');
+    expect(csv.split("\n")[1]).toBe('1,"Smith, Jr.",1,50,2');
   });
 
   it("quotes player names containing a newline", () => {

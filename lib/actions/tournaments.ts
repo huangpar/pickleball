@@ -2,6 +2,8 @@
 
 import { db } from "@/lib/db/client";
 import { tournaments, tournamentParticipants, matches, matchParticipants } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { generateSinglesSchedule } from "@/lib/scheduling/singles";
 import { generateFixedDoublesSchedule } from "@/lib/scheduling/fixedDoubles";
 import { generateRotatingDoublesSchedule } from "@/lib/scheduling/rotatingDoubles";
@@ -76,4 +78,37 @@ export async function generateBracket(formData: FormData): Promise<string> {
   }
 
   return tournament.id;
+}
+
+export async function startTournament(tournamentId: string): Promise<void> {
+  const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
+  if (!tournament) throw new Error("Tournament not found");
+  if (tournament.status !== "scheduled") {
+    throw new Error("Tournament has already been started");
+  }
+
+  await db
+    .update(tournaments)
+    .set({ status: "in_progress", startedAt: new Date() })
+    .where(eq(tournaments.id, tournamentId));
+
+  safeRevalidatePath(`/tournaments/${tournamentId}`);
+  safeRevalidatePath("/tournaments");
+  safeRevalidatePath("/");
+}
+
+// `revalidatePath` requires an active Next.js request-scoped store and throws
+// "Invariant: static generation store missing" when called outside one (e.g.
+// invoking this server action directly from a Vitest test, rather than through
+// a real Next.js request). That invariant is irrelevant here — there's no
+// route cache to invalidate outside a real request — so it's safe to ignore.
+function safeRevalidatePath(path: string): void {
+  try {
+    revalidatePath(path);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Invariant: static generation store missing")) {
+      return; // No-op outside a Next.js request context (e.g. tests).
+    }
+    throw error;
+  }
 }

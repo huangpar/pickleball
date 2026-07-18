@@ -34,12 +34,11 @@ export interface TournamentDetail {
 export interface TournamentParticipant {
   id: string;
   name: string;
-  duprRating: string;
 }
 
 export async function getTournamentParticipants(tournamentId: string): Promise<TournamentParticipant[]> {
   return db
-    .select({ id: players.id, name: players.name, duprRating: players.duprRating })
+    .select({ id: players.id, name: players.name })
     .from(tournamentParticipants)
     .innerJoin(players, eq(tournamentParticipants.playerId, players.id))
     .where(eq(tournamentParticipants.tournamentId, tournamentId));
@@ -130,7 +129,6 @@ export async function getTournamentStandings(tournamentId: string): Promise<Stan
     rows.push({
       id: participant.id,
       name: participant.name,
-      duprRating: participant.duprRating,
       wins: computeWins(outcomes),
       matchesPlayed: outcomes.length,
       winPercentage: computeWinPercentage(outcomes),

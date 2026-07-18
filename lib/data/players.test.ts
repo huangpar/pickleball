@@ -23,7 +23,7 @@ describe("players data layer", () => {
   });
 
   it("getAllPlayers and getPlayerById return inserted players", async () => {
-    const [p1] = await db.insert(players).values({ name: "__Test Player One__", duprRating: "3.50" }).returning();
+    const [p1] = await db.insert(players).values({ name: "__Test Player One__" }).returning();
     insertedPlayerIds.push(p1.id);
 
     const all = await getAllPlayers();
@@ -34,8 +34,8 @@ describe("players data layer", () => {
   });
 
   it("getPlayerMatchOutcomes returns only final matches, sorted ascending, with correct win/loss", async () => {
-    const [p1] = await db.insert(players).values({ name: "__Test Player Two__", duprRating: "4.00" }).returning();
-    const [p2] = await db.insert(players).values({ name: "__Test Player Three__", duprRating: "4.00" }).returning();
+    const [p1] = await db.insert(players).values({ name: "__Test Player Two__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Test Player Three__" }).returning();
     insertedPlayerIds.push(p1.id, p2.id);
 
     const [tournament] = await db

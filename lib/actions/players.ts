@@ -8,25 +8,23 @@ import type { PlayerRow } from "@/lib/data/players";
 
 export async function createPlayer(formData: FormData): Promise<PlayerRow> {
   const name = String(formData.get("name") ?? "").trim();
-  const duprRating = String(formData.get("duprRating") ?? "").trim();
-  if (!name || !duprRating) {
-    throw new Error("Name and DUPR rating are required");
+  if (!name) {
+    throw new Error("Name is required");
   }
   const [inserted] = await db
     .insert(players)
-    .values({ name, duprRating })
-    .returning({ id: players.id, name: players.name, duprRating: players.duprRating });
+    .values({ name })
+    .returning({ id: players.id, name: players.name });
   revalidatePath("/players");
   return inserted;
 }
 
 export async function updatePlayer(id: string, formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
-  const duprRating = String(formData.get("duprRating") ?? "").trim();
-  if (!name || !duprRating) {
-    throw new Error("Name and DUPR rating are required");
+  if (!name) {
+    throw new Error("Name is required");
   }
-  await db.update(players).set({ name, duprRating }).where(eq(players.id, id));
+  await db.update(players).set({ name }).where(eq(players.id, id));
   revalidatePath("/players");
   revalidatePath(`/players/${id}`);
 }
