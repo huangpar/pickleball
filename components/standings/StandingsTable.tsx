@@ -55,7 +55,7 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
         ))}
       </div>
 
-      <Card className="p-0">
+      <Card className="p-0 hidden md:block" data-testid="standings-table">
         <table className="w-full">
           <thead>
             <tr className="text-left font-mono text-xs text-on-surface-variant uppercase border-b border-surface-container-high">
@@ -87,6 +87,29 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
             ))}
           </tbody>
         </table>
+      </Card>
+
+      <Card className="p-0 md:hidden divide-y divide-surface-container-high" data-testid="standings-cards">
+        {sorted.map((row, i) => (
+          <div key={row.id} className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs text-on-surface-variant">{String(i + 1).padStart(2, "0")}</span>
+              <Avatar name={row.name} size="sm" />
+              <div>
+                <p className="font-body font-medium">{row.name}</p>
+                <p className="font-mono text-xs text-on-surface-variant">
+                  {row.duprRating} DUPR &middot; {row.trend === "up" ? "↑" : row.trend === "down" ? "↓" : "—"}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="font-headline font-bold">{row.wins}W</p>
+              <p className="font-mono text-xs text-on-surface-variant">
+                {row.winPercentage}% &middot; {row.matchesPlayed}m
+              </p>
+            </div>
+          </div>
+        ))}
       </Card>
     </div>
   );
