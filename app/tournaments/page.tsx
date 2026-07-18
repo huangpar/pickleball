@@ -9,7 +9,7 @@ export default async function TournamentsPage() {
 
   return (
     <main className="max-w-container-max mx-auto px-gutter py-8 space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="font-headline text-3xl font-bold">Tournaments</h1>
         <Button href="/tournaments/new">Create Tournament</Button>
       </div>

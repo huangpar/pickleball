@@ -34,7 +34,7 @@ export function ParticipantPicker({
         onChange={(e) => setFilter(e.target.value)}
         className="border border-outline-variant rounded px-3 py-2 w-full"
       />
-      <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-80 overflow-y-auto">
         {filtered.map((player) => {
           const isSelected = selectedIds.includes(player.id);
           return (

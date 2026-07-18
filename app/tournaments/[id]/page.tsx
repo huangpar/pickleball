@@ -26,7 +26,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
   return (
     <main className="max-w-container-max mx-auto px-gutter py-8 space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="font-headline text-3xl font-bold">{tournament.name}</h1>
         <div className="flex items-center gap-3">
           <Badge>{tournament.status.replace("_", " ")}</Badge>
