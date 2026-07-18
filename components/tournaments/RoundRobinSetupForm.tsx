@@ -26,11 +26,11 @@ export function RoundRobinSetupForm({
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [numCourts, setNumCourts] = useState(2);
+  const [numCourts, setNumCourts] = useState<number | "">(2);
   const [matchDurationMinutes, setMatchDurationMinutes] = useState(30);
   const [matchFormat, setMatchFormat] = useState<MatchFormat>("singles");
   const [teamMode, setTeamMode] = useState<TeamMode>("fixed");
-  const [numRounds, setNumRounds] = useState(4);
+  const [numRounds, setNumRounds] = useState<number | "">(4);
   const [availablePlayers, setAvailablePlayers] = useState<PlayerRow[]>(initialPlayers);
   const [selectedOrder, setSelectedOrder] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -47,13 +47,15 @@ export function RoundRobinSetupForm({
       : [];
 
   const preview = useMemo(() => {
+    const courts = numCourts === "" ? 0 : numCourts;
+    const rounds = numRounds === "" ? 0 : numRounds;
     if (matchFormat === "singles") {
-      return computeSinglesPreview(selectedOrder.length, numCourts, matchDurationMinutes);
+      return computeSinglesPreview(selectedOrder.length, courts, matchDurationMinutes);
     }
     if (teamMode === "fixed") {
-      return computeFixedDoublesPreview(fixedTeams.length, numCourts, matchDurationMinutes);
+      return computeFixedDoublesPreview(fixedTeams.length, courts, matchDurationMinutes);
     }
-    return computeRotatingDoublesPreview(selectedOrder.length, numCourts, matchDurationMinutes, numRounds);
+    return computeRotatingDoublesPreview(selectedOrder.length, courts, matchDurationMinutes, rounds);
   }, [matchFormat, teamMode, selectedOrder.length, numCourts, matchDurationMinutes, numRounds, fixedTeams.length]);
 
   function toggleParticipant(id: string) {
@@ -109,7 +111,7 @@ export function RoundRobinSetupForm({
             type="number"
             min={1}
             value={numCourts}
-            onChange={(e) => setNumCourts(Number(e.target.value))}
+            onChange={(e) => setNumCourts(e.target.value === "" ? "" : Number(e.target.value))}
             className="border border-outline-variant rounded px-3 py-2"
           />
         </label>
@@ -180,7 +182,7 @@ export function RoundRobinSetupForm({
               type="number"
               min={1}
               value={numRounds}
-              onChange={(e) => setNumRounds(Number(e.target.value))}
+              onChange={(e) => setNumRounds(e.target.value === "" ? "" : Number(e.target.value))}
               className="border border-outline-variant rounded px-3 py-2"
             />
           </label>
