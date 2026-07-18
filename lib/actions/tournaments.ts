@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db/client";
 import { tournaments, tournamentParticipants, matches, matchParticipants } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { generateSinglesSchedule } from "@/lib/scheduling/singles";
 import { generateFixedDoublesSchedule } from "@/lib/scheduling/fixedDoubles";
@@ -96,6 +96,23 @@ export async function startTournament(tournamentId: string): Promise<void> {
     .where(eq(tournaments.id, tournamentId));
 
   safeRevalidatePath(`/tournaments/${tournamentId}`);
+  safeRevalidatePath("/tournaments");
+  safeRevalidatePath("/");
+}
+
+export async function deleteTournament(tournamentId: string): Promise<void> {
+  const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
+  if (!tournament) throw new Error("Tournament not found");
+
+  const matchRows = await db.select({ id: matches.id }).from(matches).where(eq(matches.tournamentId, tournamentId));
+  const matchIds = matchRows.map((m) => m.id);
+  if (matchIds.length > 0) {
+    await db.delete(matchParticipants).where(inArray(matchParticipants.matchId, matchIds));
+    await db.delete(matches).where(eq(matches.tournamentId, tournamentId));
+  }
+  await db.delete(tournamentParticipants).where(eq(tournamentParticipants.tournamentId, tournamentId));
+  await db.delete(tournaments).where(eq(tournaments.id, tournamentId));
+
   safeRevalidatePath("/tournaments");
   safeRevalidatePath("/");
 }

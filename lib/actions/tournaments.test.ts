@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { db } from "@/lib/db/client";
 import { players, tournaments, tournamentParticipants, matches, matchParticipants } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { generateBracket, startTournament } from "./tournaments";
+import { generateBracket, startTournament, deleteTournament } from "./tournaments";
 
 describe("generateBracket", () => {
   const insertedPlayerIds: string[] = [];
@@ -133,5 +133,60 @@ describe("startTournament", () => {
 
   it("throws for a nonexistent tournament", async () => {
     await expect(startTournament("00000000-0000-0000-0000-000000000000")).rejects.toThrow("Tournament not found");
+  });
+});
+
+describe("deleteTournament", () => {
+  const insertedPlayerIds: string[] = [];
+
+  afterAll(async () => {
+    for (const id of insertedPlayerIds) await db.delete(players).where(eq(players.id, id));
+  });
+
+  it("removes a tournament along with its participants, matches, and match participants", async () => {
+    const [p1] = await db.insert(players).values({ name: "__Delete P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Delete P2__" }).returning();
+    insertedPlayerIds.push(p1.id, p2.id);
+
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Delete Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .returning();
+    await db.insert(tournamentParticipants).values([
+      { tournamentId: tournament.id, playerId: p1.id },
+      { tournamentId: tournament.id, playerId: p2.id },
+    ]);
+    const [match] = await db
+      .insert(matches)
+      .values({ tournamentId: tournament.id, courtNumber: 1, roundNumber: 1, status: "scheduled" })
+      .returning();
+    await db.insert(matchParticipants).values([
+      { matchId: match.id, playerId: p1.id, side: 1 },
+      { matchId: match.id, playerId: p2.id, side: 2 },
+    ]);
+
+    await deleteTournament(tournament.id);
+
+    const [remainingTournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournament.id));
+    expect(remainingTournament).toBeUndefined();
+
+    const remainingParticipants = await db
+      .select()
+      .from(tournamentParticipants)
+      .where(eq(tournamentParticipants.tournamentId, tournament.id));
+    expect(remainingParticipants).toHaveLength(0);
+
+    const remainingMatches = await db.select().from(matches).where(eq(matches.tournamentId, tournament.id));
+    expect(remainingMatches).toHaveLength(0);
+
+    const remainingMatchParticipants = await db
+      .select()
+      .from(matchParticipants)
+      .where(eq(matchParticipants.matchId, match.id));
+    expect(remainingMatchParticipants).toHaveLength(0);
+  });
+
+  it("throws for a nonexistent tournament", async () => {
+    await expect(deleteTournament("00000000-0000-0000-0000-000000000000")).rejects.toThrow("Tournament not found");
   });
 });

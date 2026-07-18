@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { getTournamentDetail, getTournamentStandings, type MatchDetail } from "@/lib/data/tournamentDetail";
 import { recordScore, endTournament } from "@/lib/actions/matches";
-import { startTournament } from "@/lib/actions/tournaments";
+import { startTournament, deleteTournament } from "@/lib/actions/tournaments";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { MatchScoreForm } from "@/components/tournaments/MatchScoreForm";
 import { EndTournamentButton } from "@/components/tournaments/EndTournamentButton";
 import { StartTournamentButton } from "@/components/tournaments/StartTournamentButton";
+import { DeleteTournamentButton } from "@/components/tournaments/DeleteTournamentButton";
 import { TournamentStandingsTable } from "@/components/tournaments/TournamentStandingsTable";
 
 import { Tabs } from "@/components/Tabs";
@@ -36,6 +37,11 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <Badge>{tournament.status.replace("_", " ")}</Badge>
           {isScheduled && <StartTournamentButton onStart={startTournament.bind(null, tournament.id)} />}
           {!isCompleted && !isScheduled && <EndTournamentButton onEnd={endTournament.bind(null, tournament.id)} />}
+          <DeleteTournamentButton
+            tournamentName={tournament.name}
+            onDelete={deleteTournament.bind(null, tournament.id)}
+            redirectTo="/tournaments"
+          />
         </div>
       </div>
 
