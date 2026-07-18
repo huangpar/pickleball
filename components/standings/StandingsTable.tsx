@@ -3,8 +3,7 @@
 import { useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Card } from "@/components/Card";
-import { Button } from "@/components/Button";
-import { sortStandings, standingsToCsv, type StandingRow, type StandingsSort } from "@/lib/standings";
+import { sortStandings, type StandingRow, type StandingsSort } from "@/lib/standings";
 
 const PLACE_LABELS = ["1st Place", "2nd Place", "3rd Place"];
 
@@ -12,17 +11,6 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
   const [sortBy, setSortBy] = useState<StandingsSort>("wins");
   const sorted = useMemo(() => sortStandings(initialStandings, sortBy), [initialStandings, sortBy]);
   const top3 = sorted.slice(0, 3);
-
-  function handleExport() {
-    const csv = standingsToCsv(sorted);
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "standings.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-  }
 
   return (
     <div className="space-y-6">

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { StandingsTable } from "./StandingsTable";
 import type { StandingRow } from "@/lib/standings";
@@ -8,11 +8,6 @@ const standings: StandingRow[] = [
   { id: "b", name: "Bo", duprRating: "4.00", wins: 8, matchesPlayed: 9, winPercentage: 50, trend: "up" },
   { id: "c", name: "Cy", duprRating: "3.80", wins: 2, matchesPlayed: 4, winPercentage: 99, trend: "down" },
 ];
-
-beforeAll(() => {
-  global.URL.createObjectURL = vi.fn(() => "blob:mock");
-  global.URL.revokeObjectURL = vi.fn();
-});
 
 describe("StandingsTable", () => {
   it("defaults to sorting by wins descending", () => {
@@ -26,11 +21,5 @@ describe("StandingsTable", () => {
     fireEvent.click(screen.getByRole("button", { name: "Win %" }));
     const rows = screen.getAllByRole("row").slice(1);
     expect(within(rows[0]).getByText("Cy")).toBeInTheDocument();
-  });
-
-  it("generates a CSV blob when Export CSV is clicked", () => {
-    render(<StandingsTable initialStandings={standings} />);
-    fireEvent.click(screen.getByRole("button", { name: "Export CSV" }));
-    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
   });
 });
