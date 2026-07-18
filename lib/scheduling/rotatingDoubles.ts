@@ -13,6 +13,21 @@ function shuffle<T>(items: T[], rng: () => number): T[] {
   return arr;
 }
 
+function selectSitOutPlayers(
+  playerIds: string[],
+  sitOutCount: number,
+  byeCounts: Map<string, number>,
+  rng: () => number
+): Set<string> {
+  if (sitOutCount === 0) return new Set();
+
+  const shuffled = shuffle(playerIds, rng); // randomizes tie-break order
+  const sortedByFewestByes = [...shuffled].sort(
+    (a, b) => (byeCounts.get(a) ?? 0) - (byeCounts.get(b) ?? 0)
+  );
+  return new Set(sortedByFewestByes.slice(0, sitOutCount));
+}
+
 function bestTeamSplit(
   group: string[],
   partnerCounts: Map<string, number>,
@@ -49,10 +64,16 @@ export function generateRotatingDoublesSchedule(
 ): ScheduledMatch[] {
   const partnerCounts = new Map<string, number>();
   const opponentCounts = new Map<string, number>();
+  const byeCounts = new Map<string, number>();
   const schedule: ScheduledMatch[] = [];
+  const sitOutCount = playerIds.length % 4;
 
   for (let round = 1; round <= numRounds; round++) {
-    const shuffled = shuffle(playerIds, rng);
+    const sitOutIds = selectSitOutPlayers(playerIds, sitOutCount, byeCounts, rng);
+    sitOutIds.forEach((id) => byeCounts.set(id, (byeCounts.get(id) ?? 0) + 1));
+
+    const playingIds = playerIds.filter((id) => !sitOutIds.has(id));
+    const shuffled = shuffle(playingIds, rng);
     const groups: string[][] = [];
     for (let i = 0; i + 4 <= shuffled.length; i += 4) {
       groups.push(shuffled.slice(i, i + 4));

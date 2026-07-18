@@ -11,6 +11,23 @@ function mulberry32(seed: number) {
   };
 }
 
+function countByesByPlayer(schedule: ReturnType<typeof generateRotatingDoublesSchedule>, players: string[], numRounds: number) {
+  const byeCounts = new Map<string, number>();
+  for (const id of players) byeCounts.set(id, 0);
+
+  for (let round = 1; round <= numRounds; round++) {
+    const roundMatches = schedule.filter((m) => m.roundNumber === round);
+    const playing = new Set(roundMatches.flatMap((m) => [...m.side1PlayerIds, ...m.side2PlayerIds]));
+    for (const id of players) {
+      if (!playing.has(id)) {
+        byeCounts.set(id, (byeCounts.get(id) ?? 0) + 1);
+      }
+    }
+  }
+
+  return byeCounts;
+}
+
 describe("generateRotatingDoublesSchedule", () => {
   const players = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"];
 
@@ -47,5 +64,24 @@ describe("generateRotatingDoublesSchedule", () => {
     const a = generateRotatingDoublesSchedule(players, 2, 3, mulberry32(99));
     const b = generateRotatingDoublesSchedule(players, 2, 3, mulberry32(99));
     expect(a).toEqual(b);
+  });
+
+  it("gives every player exactly one bye when byes divide evenly", () => {
+    const fivePlayers = ["p1", "p2", "p3", "p4", "p5"];
+    const numRounds = 5; // 1 sit-out per round (5 % 4 = 1) * 5 rounds = 5 total byes for 5 players
+    const schedule = generateRotatingDoublesSchedule(fivePlayers, 2, numRounds, mulberry32(1));
+
+    const byeCounts = countByesByPlayer(schedule, fivePlayers, numRounds);
+    expect([...byeCounts.values()]).toEqual([1, 1, 1, 1, 1]);
+  });
+
+  it("keeps bye counts within 1 of each other when byes don't divide evenly", () => {
+    const sevenPlayers = players.slice(0, 7);
+    const numRounds = 4; // 3 sit-outs per round (7 % 4 = 3) * 4 rounds = 12 total byes for 7 players
+    const schedule = generateRotatingDoublesSchedule(sevenPlayers, 2, numRounds, mulberry32(2));
+
+    const byeCounts = countByesByPlayer(schedule, sevenPlayers, numRounds);
+    const counts = [...byeCounts.values()];
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
   });
 });
