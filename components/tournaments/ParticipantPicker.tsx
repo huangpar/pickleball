@@ -35,19 +35,33 @@ export function ParticipantPicker({
         className="border border-outline-variant rounded px-3 py-2 w-full"
       />
       <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto">
-        {filtered.map((player) => (
-          <label key={player.id} className="flex items-center gap-2 border border-outline-variant rounded px-3 py-2">
-            <input
-              type="checkbox"
-              checked={selectedIds.includes(player.id)}
-              onChange={() => onToggle(player.id)}
-              aria-label={player.name}
-            />
-            <span>
-              {player.name} <span className="font-mono text-xs text-on-surface-variant">{player.duprRating}</span>
-            </span>
-          </label>
-        ))}
+        {filtered.map((player) => {
+          const isSelected = selectedIds.includes(player.id);
+          return (
+            <label
+              key={player.id}
+              className={`flex items-center justify-between border rounded-lg px-3 py-2 cursor-pointer transition-colors ${
+                isSelected
+                  ? "bg-secondary-container border-secondary-container text-on-secondary-container font-medium"
+                  : "bg-surface-container-lowest border-outline-variant hover:bg-surface-container-low text-on-surface"
+              }`}
+            >
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={isSelected}
+                onChange={() => onToggle(player.id)}
+                aria-label={player.name}
+              />
+              <span className="font-body">
+                {player.name}
+              </span>
+              <span className={`font-mono text-xs ${isSelected ? "text-on-secondary-container/70" : "text-on-surface-variant"}`}>
+                {player.duprRating}
+              </span>
+            </label>
+          );
+        })}
       </div>
       <div>
         <h3 className="font-headline text-sm font-semibold mb-2">Add a new player</h3>

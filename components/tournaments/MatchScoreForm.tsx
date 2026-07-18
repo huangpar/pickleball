@@ -31,49 +31,72 @@ export function MatchScoreForm({
     }
   }
 
+  const side1Won = side1Score !== null && side2Score !== null && side1Score > side2Score;
+  const side2Won = side1Score !== null && side2Score !== null && side2Score > side1Score;
+
+  const getRowClass = (isWinner: boolean) => {
+    return `flex items-center justify-between px-4 py-3 ${
+      isWinner 
+        ? "bg-[#f2fbf6] border-l-[3px] border-[#206a56]" 
+        : "bg-surface-container-lowest border-l-[3px] border-transparent"
+    }`;
+  };
+
+  const getNameClass = (isWinner: boolean) => {
+    return `font-body font-medium ${isWinner ? "text-on-surface" : "text-on-surface-variant"}`;
+  };
+
+  const getScoreClass = (isWinner: boolean) => {
+    return `font-mono font-bold ${
+      isWinner ? "text-[#206a56] text-xl" : "text-outline text-xl"
+    }`;
+  };
+
   if (disabled) {
     return (
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <span className="font-body">{side1PlayerNames.join(" & ")}</span>
-          <span className="font-mono font-semibold">{side1Score ?? "—"}</span>
+      <div className="divide-y divide-outline-variant/30">
+        <div className={getRowClass(side1Won)}>
+          <span className={getNameClass(side1Won)}>{side1PlayerNames.join(" & ")}</span>
+          <span className={getScoreClass(side1Won)}>{side1Score ?? "—"}</span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="font-body">{side2PlayerNames.join(" & ")}</span>
-          <span className="font-mono font-semibold">{side2Score ?? "—"}</span>
+        <div className={getRowClass(side2Won)}>
+          <span className={getNameClass(side2Won)}>{side2PlayerNames.join(" & ")}</span>
+          <span className={getScoreClass(side2Won)}>{side2Score ?? "—"}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
-        <span className="font-body">{side1PlayerNames.join(" & ")}</span>
+    <form onSubmit={handleSubmit} className="divide-y divide-outline-variant/30">
+      <div className={getRowClass(side1Won)}>
+        <span className={getNameClass(side1Won)}>{side1PlayerNames.join(" & ")}</span>
         <input
           name="side1Score"
           type="number"
           min={0}
           defaultValue={side1Score ?? ""}
           aria-label="Side 1 score"
-          className="border border-outline-variant rounded px-2 py-1 w-16"
+          className={`border border-outline-variant rounded px-2 py-1 w-16 text-center bg-white ${getScoreClass(side1Won)}`}
         />
       </div>
-      <div className="flex items-center justify-between gap-3">
-        <span className="font-body">{side2PlayerNames.join(" & ")}</span>
+      <div className={getRowClass(side2Won)}>
+        <span className={getNameClass(side2Won)}>{side2PlayerNames.join(" & ")}</span>
         <input
           name="side2Score"
           type="number"
           min={0}
           defaultValue={side2Score ?? ""}
           aria-label="Side 2 score"
-          className="border border-outline-variant rounded px-2 py-1 w-16"
+          className={`border border-outline-variant rounded px-2 py-1 w-16 text-center bg-white ${getScoreClass(side2Won)}`}
         />
       </div>
-      <Button type="submit" variant="secondary">
-        Save
-      </Button>
-      {error && <p className="text-error text-sm">{error}</p>}
+      <div className="p-3 flex items-center justify-between bg-surface-container-lowest border-t border-outline-variant/30">
+        {error ? <p className="text-error text-sm">{error}</p> : <div />}
+        <Button type="submit" variant="secondary">
+          Save
+        </Button>
+      </div>
     </form>
   );
 }

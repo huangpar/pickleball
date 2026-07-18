@@ -42,3 +42,6 @@ next-env.d.ts
 
 # superpowers sdd ledger/scratch (local only)
 .superpowers/
+
+# Claude Code local tool state (permissions, launch config, scratch)
+.claude/

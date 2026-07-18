@@ -45,9 +45,6 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
             Win %
           </button>
         </div>
-        <Button variant="secondary" onClick={handleExport}>
-          Export CSV
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

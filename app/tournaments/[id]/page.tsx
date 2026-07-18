@@ -7,6 +7,8 @@ import { MatchScoreForm } from "@/components/tournaments/MatchScoreForm";
 import { EndTournamentButton } from "@/components/tournaments/EndTournamentButton";
 import { TournamentStandingsTable } from "@/components/tournaments/TournamentStandingsTable";
 
+import { Tabs } from "@/components/Tabs";
+
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [tournament, standings] = await Promise.all([getTournamentDetail(id), getTournamentStandings(id)]);
@@ -32,34 +34,52 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         </div>
       </div>
 
-      {[...rounds.entries()].map(([roundNumber, roundMatches]) => (
-        <Card key={roundNumber} className="p-0 divide-y divide-surface-container-high">
-          <h2 className="font-headline text-lg font-semibold p-4">Round {roundNumber}</h2>
-          {roundMatches.map((match) => (
-            <div key={match.id} className="p-4">
-              <p className="font-mono text-xs text-on-surface-variant uppercase mb-2">Court {match.courtNumber}</p>
-              <MatchScoreForm
-                side1PlayerNames={match.side1PlayerNames}
-                side2PlayerNames={match.side2PlayerNames}
-                side1Score={match.side1Score}
-                side2Score={match.side2Score}
-                disabled={isCompleted}
-                onSubmit={recordScore.bind(null, match.id)}
-              />
-            </div>
-          ))}
-          {byesByRound.has(roundNumber) && (
-            <p className="p-4 font-body text-sm text-on-surface-variant">
-              Bye: {byesByRound.get(roundNumber)!.join(", ")}
-            </p>
-          )}
-        </Card>
-      ))}
-
-      <div>
-        <h2 className="font-headline text-lg font-semibold mb-4">Tournament Standings</h2>
-        <TournamentStandingsTable standings={standings} />
-      </div>
+      <Tabs
+        tabs={[
+          ...[...rounds.entries()].map(([roundNumber, roundMatches]) => ({
+            id: `round-${roundNumber}`,
+            label: `Round ${roundNumber}`,
+            content: (
+              <div className="space-y-4">
+                <h2 className="font-headline text-lg font-semibold">Round {roundNumber}</h2>
+                {roundMatches.map((match) => (
+                  <Card key={match.id} className="p-0 overflow-hidden border border-outline-variant/30 shadow-sm">
+                    <div className="bg-surface-bright border-b border-outline-variant/30 px-4 py-3">
+                      <h3 className="font-mono text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Court {match.courtNumber}</h3>
+                    </div>
+                    <MatchScoreForm
+                      side1PlayerNames={match.side1PlayerNames}
+                      side2PlayerNames={match.side2PlayerNames}
+                      side1Score={match.side1Score}
+                      side2Score={match.side2Score}
+                      disabled={isCompleted}
+                      onSubmit={recordScore.bind(null, match.id)}
+                    />
+                  </Card>
+                ))}
+                {byesByRound.has(roundNumber) && (
+                  <Card className="p-0 overflow-hidden border border-outline-variant/30 shadow-sm">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-surface-container-lowest">
+                      <span className="inline-block bg-surface-container-high text-on-surface-variant font-mono text-xs uppercase font-bold tracking-wide px-2 py-1 rounded">BYE</span>
+                      <span className="font-body text-on-surface">{byesByRound.get(roundNumber)!.join(", ")}</span>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            ),
+          })),
+          {
+            id: "standings",
+            label: "Standings",
+            content: (
+              <div>
+                <h2 className="font-headline text-lg font-semibold mb-4">Tournament Standings</h2>
+                <TournamentStandingsTable standings={standings} />
+              </div>
+            ),
+          },
+        ]}
+      />
     </main>
   );
 }
