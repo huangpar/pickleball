@@ -25,7 +25,7 @@ export function AddPlayerForm({ onSubmit }: { onSubmit: (formData: FormData) => 
         Name
         <input name="name" required className="border border-outline-variant rounded px-3 py-2" />
       </label>
-      <label className="flex flex-col text-sm gap-1">
+      {/* <label className="flex flex-col text-sm gap-1">
         DUPR Rating
         <input
           name="duprRating"
@@ -36,7 +36,7 @@ export function AddPlayerForm({ onSubmit }: { onSubmit: (formData: FormData) => 
           required
           className="border border-outline-variant rounded px-3 py-2 w-28"
         />
-      </label>
+      </label> */}
       <Button type="submit">Add Player</Button>
       {error && <p className="text-error text-sm w-full">{error}</p>}
     </form>

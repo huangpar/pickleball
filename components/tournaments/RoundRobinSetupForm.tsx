@@ -114,7 +114,7 @@ export function RoundRobinSetupForm({
           />
         </label>
 
-        <label className="flex flex-col text-sm gap-1">
+        {/* <label className="flex flex-col text-sm gap-1">
           Match Duration (minutes)
           <input
             type="number"
@@ -123,7 +123,7 @@ export function RoundRobinSetupForm({
             onChange={(e) => setMatchDurationMinutes(Number(e.target.value))}
             className="border border-outline-variant rounded px-3 py-2"
           />
-        </label>
+        </label> */}
 
         <fieldset className="flex gap-4">
           <label className="flex items-center gap-2">
