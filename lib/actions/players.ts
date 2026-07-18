@@ -16,6 +16,8 @@ export async function createPlayer(formData: FormData): Promise<PlayerRow> {
     .values({ name })
     .returning({ id: players.id, name: players.name });
   revalidatePath("/players");
+  revalidatePath("/tournaments/new");
+  revalidatePath("/standings");
   return inserted;
 }
 
@@ -27,4 +29,6 @@ export async function updatePlayer(id: string, formData: FormData): Promise<void
   await db.update(players).set({ name }).where(eq(players.id, id));
   revalidatePath("/players");
   revalidatePath(`/players/${id}`);
+  revalidatePath("/tournaments/new");
+  revalidatePath("/standings");
 }
