@@ -35,7 +35,7 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {top3.map((row, i) => (
           <Card key={row.id}>
             <Avatar name={row.name} />
@@ -53,7 +53,7 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
             </div>
           </Card>
         ))}
-      </div>
+      </div> */}
 
       <Card className="p-0 hidden md:block" data-testid="standings-table">
         <table className="w-full">
