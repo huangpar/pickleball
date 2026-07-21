@@ -14,6 +14,7 @@ export interface MatchDetail {
   side2Score: number | null;
   side1PlayerNames: string[];
   side2PlayerNames: string[];
+  firstServerName: string | null;
 }
 
 export interface RoundBye {
@@ -82,6 +83,7 @@ export async function getTournamentDetail(tournamentId: string): Promise<Tournam
   const matchDetails: MatchDetail[] = matchRows
     .map((m) => {
       const participantsInMatch = participantsByMatch.get(m.id) ?? [];
+      const firstServer = participantsInMatch.find((p) => p.playerId === m.firstServerId);
       return {
         id: m.id,
         roundNumber: m.roundNumber,
@@ -91,6 +93,7 @@ export async function getTournamentDetail(tournamentId: string): Promise<Tournam
         side2Score: m.side2Score,
         side1PlayerNames: participantsInMatch.filter((p) => p.side === 1).map((p) => p.name),
         side2PlayerNames: participantsInMatch.filter((p) => p.side === 2).map((p) => p.name),
+        firstServerName: firstServer ? firstServer.name : null,
       };
     })
     .sort((a, b) => a.roundNumber - b.roundNumber || a.courtNumber - b.courtNumber);

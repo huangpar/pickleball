@@ -130,4 +130,39 @@ describe("getTournamentDetail", () => {
       { roundNumber: 3, playerNames: ["__Bye P1__"] },
     ]);
   });
+
+  it("resolves firstServerName from the match's firstServerId, or null when not set", async () => {
+    const [p1] = await db.insert(players).values({ name: "__Server P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Server P2__" }).returning();
+    insertedPlayerIds.push(p1.id, p2.id);
+
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Server Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .returning();
+    tournamentIds.push(tournament.id);
+
+    const [matchWithServer] = await db
+      .insert(matches)
+      .values({ tournamentId: tournament.id, courtNumber: 1, roundNumber: 1, status: "scheduled", firstServerId: p1.id })
+      .returning();
+    const [matchWithoutServer] = await db
+      .insert(matches)
+      .values({ tournamentId: tournament.id, courtNumber: 1, roundNumber: 2, status: "scheduled" })
+      .returning();
+    matchIds.push(matchWithServer.id, matchWithoutServer.id);
+
+    await db.insert(matchParticipants).values([
+      { matchId: matchWithServer.id, playerId: p1.id, side: 1 },
+      { matchId: matchWithServer.id, playerId: p2.id, side: 2 },
+      { matchId: matchWithoutServer.id, playerId: p1.id, side: 1 },
+      { matchId: matchWithoutServer.id, playerId: p2.id, side: 2 },
+    ]);
+
+    const detail = await getTournamentDetail(tournament.id);
+    const withServer = detail?.matches.find((m) => m.id === matchWithServer.id);
+    const withoutServer = detail?.matches.find((m) => m.id === matchWithoutServer.id);
+    expect(withServer?.firstServerName).toBe("__Server P1__");
+    expect(withoutServer?.firstServerName).toBeNull();
+  });
 });

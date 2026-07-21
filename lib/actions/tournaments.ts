@@ -68,6 +68,7 @@ export async function generateBracket(formData: FormData): Promise<string> {
         courtNumber: scheduledMatch.courtNumber,
         roundNumber: scheduledMatch.roundNumber,
         status: "scheduled",
+        firstServerId: scheduledMatch.firstServerId,
       })
       .returning();
 
