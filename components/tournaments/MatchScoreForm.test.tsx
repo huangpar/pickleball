@@ -11,6 +11,7 @@ describe("MatchScoreForm", () => {
         side2PlayerNames={["Ben Rivera"]}
         side1Score={11}
         side2Score={7}
+        firstServerName={null}
         disabled={false}
         onSubmit={onSubmit}
       />
@@ -36,6 +37,7 @@ describe("MatchScoreForm", () => {
         side2PlayerNames={["Ben Rivera"]}
         side1Score={null}
         side2Score={null}
+        firstServerName={null}
         disabled={false}
         onSubmit={onSubmit}
       />
@@ -56,6 +58,7 @@ describe("MatchScoreForm", () => {
         side2PlayerNames={["Ben Rivera"]}
         side1Score={11}
         side2Score={7}
+        firstServerName={null}
         disabled={true}
         onSubmit={onSubmit}
       />
@@ -76,11 +79,60 @@ describe("MatchScoreForm", () => {
         side2PlayerNames={["Ben Rivera"]}
         side1Score={null}
         side2Score={null}
+        firstServerName={null}
         disabled={true}
         onSubmit={vi.fn()}
       />
     );
 
     expect(screen.getAllByText("—")).toHaveLength(2);
+  });
+
+  it("shows a serves-first label next to the correct player when editable", () => {
+    render(
+      <MatchScoreForm
+        side1PlayerNames={["Alex Sterling", "Casey Nguyen"]}
+        side2PlayerNames={["Ben Rivera", "Dana Kim"]}
+        side1Score={null}
+        side2Score={null}
+        firstServerName="Casey Nguyen"
+        disabled={false}
+        onSubmit={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Casey Nguyen serves first/)).toBeInTheDocument();
+  });
+
+  it("shows a serves-first label next to the correct player when disabled", () => {
+    render(
+      <MatchScoreForm
+        side1PlayerNames={["Alex Sterling"]}
+        side2PlayerNames={["Ben Rivera"]}
+        side1Score={11}
+        side2Score={7}
+        firstServerName="Ben Rivera"
+        disabled={true}
+        onSubmit={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Ben Rivera serves first/)).toBeInTheDocument();
+  });
+
+  it("shows no serves-first label when firstServerName is null", () => {
+    render(
+      <MatchScoreForm
+        side1PlayerNames={["Alex Sterling"]}
+        side2PlayerNames={["Ben Rivera"]}
+        side1Score={11}
+        side2Score={7}
+        firstServerName={null}
+        disabled={true}
+        onSubmit={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByText(/serves first/i)).not.toBeInTheDocument();
   });
 });

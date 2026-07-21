@@ -63,6 +63,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                       side2PlayerNames={match.side2PlayerNames}
                       side1Score={match.side1Score}
                       side2Score={match.side2Score}
+                      firstServerName={match.firstServerName}
                       disabled={!canScore}
                       onSubmit={recordScore.bind(null, match.id)}
                     />

@@ -8,6 +8,7 @@ export function MatchScoreForm({
   side2PlayerNames,
   side1Score,
   side2Score,
+  firstServerName,
   disabled,
   onSubmit,
 }: {
@@ -15,6 +16,7 @@ export function MatchScoreForm({
   side2PlayerNames: string[];
   side1Score: number | null;
   side2Score: number | null;
+  firstServerName: string | null;
   disabled: boolean;
   onSubmit: (formData: FormData) => Promise<void>;
 }) {
@@ -36,8 +38,8 @@ export function MatchScoreForm({
 
   const getRowClass = (isWinner: boolean) => {
     return `flex items-center justify-between px-4 py-3 ${
-      isWinner 
-        ? "bg-[#f2fbf6] border-l-[3px] border-[#206a56]" 
+      isWinner
+        ? "bg-[#f2fbf6] border-l-[3px] border-[#206a56]"
         : "bg-surface-container-lowest border-l-[3px] border-transparent"
     }`;
   };
@@ -52,15 +54,27 @@ export function MatchScoreForm({
     }`;
   };
 
+  function renderSideName(isWinner: boolean, playerNames: string[]) {
+    const servesFirst = firstServerName !== null && playerNames.includes(firstServerName);
+    return (
+      <span className={getNameClass(isWinner)}>
+        {playerNames.join(" & ")}
+        {servesFirst && (
+          <span className="text-on-surface-variant font-normal"> · {firstServerName} serves first</span>
+        )}
+      </span>
+    );
+  }
+
   if (disabled) {
     return (
       <div className="divide-y divide-outline-variant/30">
         <div className={getRowClass(side1Won)}>
-          <span className={getNameClass(side1Won)}>{side1PlayerNames.join(" & ")}</span>
+          {renderSideName(side1Won, side1PlayerNames)}
           <span className={getScoreClass(side1Won)}>{side1Score ?? "—"}</span>
         </div>
         <div className={getRowClass(side2Won)}>
-          <span className={getNameClass(side2Won)}>{side2PlayerNames.join(" & ")}</span>
+          {renderSideName(side2Won, side2PlayerNames)}
           <span className={getScoreClass(side2Won)}>{side2Score ?? "—"}</span>
         </div>
       </div>
@@ -70,7 +84,7 @@ export function MatchScoreForm({
   return (
     <form onSubmit={handleSubmit} className="divide-y divide-outline-variant/30">
       <div className={getRowClass(side1Won)}>
-        <span className={getNameClass(side1Won)}>{side1PlayerNames.join(" & ")}</span>
+        {renderSideName(side1Won, side1PlayerNames)}
         <input
           name="side1Score"
           type="number"
@@ -81,7 +95,7 @@ export function MatchScoreForm({
         />
       </div>
       <div className={getRowClass(side2Won)}>
-        <span className={getNameClass(side2Won)}>{side2PlayerNames.join(" & ")}</span>
+        {renderSideName(side2Won, side2PlayerNames)}
         <input
           name="side2Score"
           type="number"
