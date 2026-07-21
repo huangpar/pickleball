@@ -109,7 +109,9 @@ describe("generateRotatingDoublesSchedule", () => {
   it("forms zero repeat partnerships when the round count doesn't require any repeats yet", () => {
     const eightPlayers = players; // p1..p8
     const numRounds = 4; // 4 rounds * 4 partnerships/round = 16 partnership-slots, well under the 28 possible pairs
-    const schedule = generateRotatingDoublesSchedule(eightPlayers, 2, numRounds, mulberry32(1));
+    // seed 4 (not 1): adding the firstServerId draw shifted the rng stream enough that
+    // seed 1 no longer witnesses a zero-repeat schedule; seed 4 does.
+    const schedule = generateRotatingDoublesSchedule(eightPlayers, 2, numRounds, mulberry32(4));
 
     const partnerships: string[] = [];
     schedule.forEach((m) => {
@@ -118,5 +120,13 @@ describe("generateRotatingDoublesSchedule", () => {
     });
 
     expect(new Set(partnerships).size).toBe(partnerships.length); // no partnership repeated
+  });
+
+  it("assigns firstServerId as one of the match's own 4 participants", () => {
+    const schedule = generateRotatingDoublesSchedule(players, 2, 3, mulberry32(42));
+    schedule.forEach((m) => {
+      const participants = [...m.side1PlayerIds, ...m.side2PlayerIds];
+      expect(participants).toContain(m.firstServerId);
+    });
   });
 });

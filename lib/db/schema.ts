@@ -39,6 +39,7 @@ export const matches = pgTable("matches", {
   side2Score: integer("side2_score"),
   status: text("status", { enum: ["scheduled", "final"] }).notNull().default("scheduled"),
   playedAt: timestamp("played_at"),
+  firstServerId: uuid("first_server_id").references(() => players.id),
 });
 
 export const matchParticipants = pgTable(

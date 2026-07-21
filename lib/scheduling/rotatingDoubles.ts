@@ -127,11 +127,13 @@ export function generateRotatingDoublesSchedule(
         })
       );
 
+      const allPlayers = [...side1, ...side2];
       schedule.push({
         roundNumber: round,
         courtNumber: (matchIndex % numCourts) + 1,
         side1PlayerIds: side1,
         side2PlayerIds: side2,
+        firstServerId: allPlayers[Math.floor(rng() * allPlayers.length)],
       });
     });
   }
