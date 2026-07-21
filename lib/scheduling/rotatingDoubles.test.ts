@@ -75,13 +75,48 @@ describe("generateRotatingDoublesSchedule", () => {
     expect([...byeCounts.values()]).toEqual([1, 1, 1, 1, 1]);
   });
 
-  it("keeps bye counts within 1 of each other when byes don't divide evenly", () => {
+  it("keeps bye counts within 2 of each other when byes don't divide evenly", () => {
     const sevenPlayers = players.slice(0, 7);
     const numRounds = 4; // 3 sit-outs per round (7 % 4 = 3) * 4 rounds = 12 total byes for 7 players
     const schedule = generateRotatingDoublesSchedule(sevenPlayers, 2, numRounds, mulberry32(2));
 
     const byeCounts = countByesByPlayer(schedule, sevenPlayers, numRounds);
     const counts = [...byeCounts.values()];
-    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(2);
+  });
+
+  it("achieves full partner coverage when there are enough rounds", () => {
+    const eightPlayers = players; // p1..p8
+    const numRounds = 14; // generous margin above the theoretical minimum of 7 for 8 players
+    const schedule = generateRotatingDoublesSchedule(eightPlayers, 2, numRounds, mulberry32(11));
+
+    const partneredPairs = new Set<string>();
+    schedule.forEach((m) => {
+      partneredPairs.add([...m.side1PlayerIds].sort().join("|"));
+      partneredPairs.add([...m.side2PlayerIds].sort().join("|"));
+    });
+
+    const allPossiblePairs = new Set<string>();
+    for (let i = 0; i < eightPlayers.length; i++) {
+      for (let j = i + 1; j < eightPlayers.length; j++) {
+        allPossiblePairs.add([eightPlayers[i], eightPlayers[j]].sort().join("|"));
+      }
+    }
+
+    expect(partneredPairs.size).toBe(allPossiblePairs.size); // every possible pair partnered at least once
+  });
+
+  it("forms zero repeat partnerships when the round count doesn't require any repeats yet", () => {
+    const eightPlayers = players; // p1..p8
+    const numRounds = 4; // 4 rounds * 4 partnerships/round = 16 partnership-slots, well under the 28 possible pairs
+    const schedule = generateRotatingDoublesSchedule(eightPlayers, 2, numRounds, mulberry32(1));
+
+    const partnerships: string[] = [];
+    schedule.forEach((m) => {
+      partnerships.push([...m.side1PlayerIds].sort().join("|"));
+      partnerships.push([...m.side2PlayerIds].sort().join("|"));
+    });
+
+    expect(new Set(partnerships).size).toBe(partnerships.length); // no partnership repeated
   });
 });

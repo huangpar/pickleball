@@ -28,32 +28,71 @@ function selectSitOutPlayers(
   return new Set(sortedByFewestByes.slice(0, sitOutCount));
 }
 
-function bestTeamSplit(
-  group: string[],
+function pairUpByPartnerCoverage(
+  playerIds: string[],
   partnerCounts: Map<string, number>,
+  rng: () => number
+): [string, string][] {
+  const candidates: { a: string; b: string; score: number }[] = [];
+  for (let i = 0; i < playerIds.length; i++) {
+    for (let j = i + 1; j < playerIds.length; j++) {
+      const a = playerIds[i];
+      const b = playerIds[j];
+      candidates.push({ a, b, score: partnerCounts.get(pairKey(a, b)) ?? 0 });
+    }
+  }
+
+  const shuffled = shuffle(candidates, rng); // randomizes tie-break order
+  const sorted = [...shuffled].sort((x, y) => x.score - y.score);
+
+  const paired = new Set<string>();
+  const pairs: [string, string][] = [];
+  for (const { a, b } of sorted) {
+    if (paired.has(a) || paired.has(b)) continue;
+    pairs.push([a, b]);
+    paired.add(a);
+    paired.add(b);
+  }
+
+  return pairs;
+}
+
+function formGroupsFromPairs(
+  pairs: [string, string][],
   opponentCounts: Map<string, number>,
   rng: () => number
-): { side1: string[]; side2: string[] } {
-  const [a, b, c, d] = group;
-  const options: [string[], string[]][] = [
-    [[a, b], [c, d]],
-    [[a, c], [b, d]],
-    [[a, d], [b, c]],
-  ];
+): { side1: string[]; side2: string[] }[] {
+  const remaining = shuffle(pairs, rng); // randomizes matchup order/tie-break
+  const used = new Array(remaining.length).fill(false);
+  const groups: { side1: string[]; side2: string[] }[] = [];
 
-  const scored = options.map((opt) => {
-    const [s1, s2] = opt;
-    const partnerScore =
-      (partnerCounts.get(pairKey(s1[0], s1[1])) ?? 0) + (partnerCounts.get(pairKey(s2[0], s2[1])) ?? 0);
-    let opponentScore = 0;
-    s1.forEach((p1) => s2.forEach((p2) => (opponentScore += opponentCounts.get(pairKey(p1, p2)) ?? 0)));
-    return { opt, score: partnerScore * 2 + opponentScore };
-  });
+  for (let i = 0; i < remaining.length; i++) {
+    if (used[i]) continue;
+    used[i] = true;
+    const side1 = remaining[i];
 
-  const minScore = Math.min(...scored.map((s) => s.score));
-  const bestOptions = scored.filter((s) => s.score === minScore).map((s) => s.opt);
-  const chosen = bestOptions[Math.floor(rng() * bestOptions.length)];
-  return { side1: chosen[0], side2: chosen[1] };
+    let bestScore = Infinity;
+    let bestIndices: number[] = [];
+    for (let j = i + 1; j < remaining.length; j++) {
+      if (used[j]) continue;
+      const side2 = remaining[j];
+      let score = 0;
+      side1.forEach((p1) => side2.forEach((p2) => (score += opponentCounts.get(pairKey(p1, p2)) ?? 0)));
+      if (score < bestScore) {
+        bestScore = score;
+        bestIndices = [j];
+      } else if (score === bestScore) {
+        bestIndices.push(j);
+      }
+    }
+
+    if (bestIndices.length === 0) break; // no partner left to group with (shouldn't happen: pairs count is always even)
+    const chosenJ = bestIndices[Math.floor(rng() * bestIndices.length)];
+    used[chosenJ] = true;
+    groups.push({ side1, side2: remaining[chosenJ] });
+  }
+
+  return groups;
 }
 
 export function generateRotatingDoublesSchedule(
@@ -73,15 +112,10 @@ export function generateRotatingDoublesSchedule(
     sitOutIds.forEach((id) => byeCounts.set(id, (byeCounts.get(id) ?? 0) + 1));
 
     const playingIds = playerIds.filter((id) => !sitOutIds.has(id));
-    const shuffled = shuffle(playingIds, rng);
-    const groups: string[][] = [];
-    for (let i = 0; i + 4 <= shuffled.length; i += 4) {
-      groups.push(shuffled.slice(i, i + 4));
-    }
+    const pairs = pairUpByPartnerCoverage(playingIds, partnerCounts, rng);
+    const groups = formGroupsFromPairs(pairs, opponentCounts, rng);
 
-    groups.forEach((group, matchIndex) => {
-      const { side1, side2 } = bestTeamSplit(group, partnerCounts, opponentCounts, rng);
-
+    groups.forEach(({ side1, side2 }, matchIndex) => {
       const partnerK1 = pairKey(side1[0], side1[1]);
       partnerCounts.set(partnerK1, (partnerCounts.get(partnerK1) ?? 0) + 1);
       const partnerK2 = pairKey(side2[0], side2[1]);
