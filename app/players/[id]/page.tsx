@@ -8,16 +8,19 @@ import { Avatar } from "@/components/Avatar";
 import { Card } from "@/components/Card";
 import { StatCard } from "@/components/StatCard";
 import { MatchSparkline } from "@/components/players/MatchSparkline";
+import { getPlayerPartnerBreakdown } from "@/lib/data/partnerBreakdown";
+import { PartnerBreakdown } from "@/components/players/PartnerBreakdown";
 
 export default async function PlayerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const player = await getPlayerById(id);
   if (!player) notFound();
 
-  const [outcomes, history, standings] = await Promise.all([
+  const [outcomes, history, standings, partnerBreakdown] = await Promise.all([
     getPlayerMatchOutcomes(player.id),
     getPlayerMatchHistory(player.id),
     getStandings(),
+    getPlayerPartnerBreakdown(player.id),
   ]);
 
   const { rank, totalPlayers } = rankPlayerByWins(standings, player.id);
@@ -67,6 +70,8 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
           </div>
         ))}
       </Card>
+
+      <PartnerBreakdown breakdown={partnerBreakdown} />
     </main>
   );
 }
