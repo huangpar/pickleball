@@ -22,14 +22,18 @@ export function EndTournamentButton({ onEnd }: { onEnd: () => Promise<void> }) {
 
   if (isConfirming) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-on-surface-variant">End tournament? Scores can no longer be edited.</span>
-        <Button variant="secondary" onClick={handleConfirmClick} disabled={isEnding}>
-          {isEnding ? "Ending..." : "Confirm"}
-        </Button>
-        <Button variant="tertiary" onClick={() => setIsConfirming(false)} disabled={isEnding}>
-          Cancel
-        </Button>
+      <div className="flex flex-col items-end gap-1">
+        <span className="text-sm text-on-surface-variant text-right">
+          End tournament? Scores can no longer be edited.
+        </span>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={handleConfirmClick} disabled={isEnding}>
+            {isEnding ? "Ending..." : "Confirm"}
+          </Button>
+          <Button variant="tertiary" onClick={() => setIsConfirming(false)} disabled={isEnding}>
+            Cancel
+          </Button>
+        </div>
       </div>
     );
   }
