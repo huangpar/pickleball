@@ -101,7 +101,7 @@ describe("MatchScoreForm", () => {
       />
     );
 
-    expect(screen.getByText(/Casey Nguyen serves first/)).toBeInTheDocument();
+    expect(screen.getByTitle("Casey Nguyen serves first")).toBeInTheDocument();
   });
 
   it("shows a serves-first label next to the correct player when disabled", () => {
@@ -117,7 +117,7 @@ describe("MatchScoreForm", () => {
       />
     );
 
-    expect(screen.getByText(/Ben Rivera serves first/)).toBeInTheDocument();
+    expect(screen.getByTitle("Ben Rivera serves first")).toBeInTheDocument();
   });
 
   it("shows no serves-first label when firstServerName is null", () => {
@@ -133,6 +133,6 @@ describe("MatchScoreForm", () => {
       />
     );
 
-    expect(screen.queryByText(/serves first/i)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/serves first/i)).not.toBeInTheDocument();
   });
 });

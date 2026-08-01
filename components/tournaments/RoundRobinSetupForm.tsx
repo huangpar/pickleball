@@ -193,38 +193,41 @@ export function RoundRobinSetupForm({
         </fieldset>
 
         {matchFormat === "doubles" && (
-          <fieldset className="flex gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="teamMode"
-                checked={teamMode === "fixed"}
-                onChange={() => setTeamMode("fixed")}
-                aria-label="Fixed Teams"
-              />
-              Fixed Teams
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="teamMode"
-                checked={teamMode === "rotating"}
-                onChange={() => setTeamMode("rotating")}
-                aria-label="Rotating Partners"
-              />
-              Rotating Partners
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="teamMode"
-                checked={teamMode === "hybrid"}
-                onChange={() => setTeamMode("hybrid")}
-                aria-label="Hybrid"
-              />
-              Hybrid
-            </label>
-          </fieldset>
+          <>
+            <hr className="border-outline-variant/30" />
+            <fieldset className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="teamMode"
+                  checked={teamMode === "fixed"}
+                  onChange={() => setTeamMode("fixed")}
+                  aria-label="Fixed Teams"
+                />
+                Fixed Teams
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="teamMode"
+                  checked={teamMode === "rotating"}
+                  onChange={() => setTeamMode("rotating")}
+                  aria-label="Rotating Partners"
+                />
+                Rotating Partners
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="teamMode"
+                  checked={teamMode === "hybrid"}
+                  onChange={() => setTeamMode("hybrid")}
+                  aria-label="Hybrid"
+                />
+                Hybrid
+              </label>
+            </fieldset>
+          </>
         )}
 
         {matchFormat === "doubles" && (teamMode === "rotating" || teamMode === "hybrid") && (

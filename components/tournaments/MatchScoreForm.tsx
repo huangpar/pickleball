@@ -60,7 +60,15 @@ export function MatchScoreForm({
       <span className={getNameClass(isWinner)}>
         {playerNames.join(" & ")}
         {servesFirst && (
-          <span className="text-on-surface-variant font-normal"> · {firstServerName} serves first</span>
+          <span
+            className="inline-flex items-center justify-center w-4 h-4 ml-1.5 rounded-full bg-secondary text-on-secondary align-middle"
+            title={`${firstServerName} serves first`}
+            aria-label={`${firstServerName} serves first`}
+          >
+            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 fill-current">
+              <circle cx="12" cy="12" r="10" />
+            </svg>
+          </span>
         )}
       </span>
     );
