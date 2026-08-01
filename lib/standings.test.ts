@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { rankPlayerByWins, sortStandings, standingsToCsv, type StandingRow } from "./standings";
 
 function row(id: string, wins: number): StandingRow {
-  return { id, name: id, wins, matchesPlayed: wins + 1, winPercentage: 50, trend: "flat" };
+  return { id, name: id, wins, losses: 0, matchesPlayed: wins + 1, winPercentage: 50, pointDifferential: 0, trend: "flat" };
 }
 
 describe("rankPlayerByWins", () => {

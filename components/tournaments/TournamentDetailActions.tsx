@@ -16,12 +16,12 @@ import type { PlayerRow } from "@/lib/data/players";
 export function TournamentDetailActions({
   tournament,
   availablePlayers,
-  isScheduled,
+  isSetup,
   isCompleted,
 }: {
   tournament: TournamentDetail;
   availablePlayers: PlayerRow[];
-  isScheduled: boolean;
+  isSetup: boolean;
   isCompleted: boolean;
 }) {
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -30,13 +30,13 @@ export function TournamentDetailActions({
     <>
       <div className="flex items-center gap-3">
         <Badge>{tournament.status.replace("_", " ")}</Badge>
-        {tournament.status === "setup" && (
+        {isSetup && (
           <Button variant="secondary" onClick={() => setIsEditOpen(true)}>
             Edit
           </Button>
         )}
-        {isScheduled && <StartTournamentButton onStart={startTournament.bind(null, tournament.id)} />}
-        {!isCompleted && !isScheduled && <EndTournamentButton onEnd={endTournament.bind(null, tournament.id)} />}
+        {isSetup && <StartTournamentButton onStart={startTournament.bind(null, tournament.id)} />}
+        {!isCompleted && !isSetup && <EndTournamentButton onEnd={endTournament.bind(null, tournament.id)} />}
         <DeleteTournamentButton
           tournamentName={tournament.name}
           onDelete={deleteTournament.bind(null, tournament.id)}

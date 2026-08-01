@@ -14,15 +14,26 @@ export function DeleteTournamentButton({
   redirectTo?: string;
 }) {
   const router = useRouter();
+  const [isConfirming, setIsConfirming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleClick(event: React.MouseEvent) {
+  function handleAskClick(event: React.MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    if (!window.confirm(`Delete "${tournamentName}"? This permanently removes it and all of its matches.`)) {
-      return;
-    }
+    setError(null);
+    setIsConfirming(true);
+  }
+
+  function handleCancelClick(event: React.MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsConfirming(false);
+  }
+
+  async function handleConfirmClick(event: React.MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
     setError(null);
     setIsDeleting(true);
     try {
@@ -31,13 +42,28 @@ export function DeleteTournamentButton({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setIsDeleting(false);
+      setIsConfirming(false);
     }
+  }
+
+  if (isConfirming) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-on-surface-variant">Delete &quot;{tournamentName}&quot;?</span>
+        <Button variant="tertiary" onClick={handleConfirmClick} disabled={isDeleting} className="text-error">
+          {isDeleting ? "Deleting..." : "Confirm"}
+        </Button>
+        <Button variant="tertiary" onClick={handleCancelClick} disabled={isDeleting}>
+          Cancel
+        </Button>
+      </div>
+    );
   }
 
   return (
     <div>
-      <Button variant="tertiary" onClick={handleClick} disabled={isDeleting} className="text-error">
-        {isDeleting ? "Deleting..." : "Delete"}
+      <Button variant="tertiary" onClick={handleAskClick} className="text-error">
+        Delete
       </Button>
       {error && <p className="text-error text-sm mt-1">{error}</p>}
     </div>

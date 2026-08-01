@@ -81,6 +81,8 @@ export function RoundRobinSetupForm({
 
   function toggleParticipant(id: string) {
     setSelectedOrder((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
+    setLockedPairs((prev) => prev.filter((pair) => !pair.includes(id)));
+    setArmedId((prev) => (prev === id ? null : prev));
   }
 
   function handlePairClick(id: string) {

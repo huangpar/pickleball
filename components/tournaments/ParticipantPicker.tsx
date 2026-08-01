@@ -76,6 +76,20 @@ export function ParticipantPicker({
               <span className="font-body">
                 {player.name}
               </span>
+              {pairLocking && isSelected && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onToggle(player.id);
+                  }}
+                  aria-label={`Remove ${player.name}`}
+                  className="ml-2 opacity-70 hover:opacity-100"
+                >
+                  &times;
+                </button>
+              )}
             </label>
           );
         })}

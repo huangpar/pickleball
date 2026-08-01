@@ -33,7 +33,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
   const byesByRound = new Map(tournament.byes.map((b) => [b.roundNumber, b.playerNames]));
   const isCompleted = tournament.status === "completed";
-  const isScheduled = tournament.status === "scheduled";
+  const isSetup = tournament.status === "setup";
   const canScore = tournament.status === "in_progress";
 
   return (
@@ -43,7 +43,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         <TournamentDetailActions
           tournament={tournament}
           availablePlayers={availablePlayers}
-          isScheduled={isScheduled}
+          isSetup={isSetup}
           isCompleted={isCompleted}
         />
       </div>
