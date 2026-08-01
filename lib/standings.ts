@@ -1,10 +1,27 @@
+import type { PlayerMatchOutcome } from "@/lib/data/players";
+
 export interface StandingRow {
   id: string;
   name: string;
   wins: number;
+  losses: number;
   matchesPlayed: number;
   winPercentage: number;
+  pointDifferential: number;
   trend: "up" | "down" | "flat";
+}
+
+export function computePointDifferential(outcomes: PlayerMatchOutcome[]): number {
+  return outcomes
+    .filter((outcome) => outcome.match.status === "final")
+    .reduce((diff, outcome) => {
+      const playerScore = outcome.side === 1 ? outcome.match.side1Score : outcome.match.side2Score;
+      const opponentScore = outcome.side === 1 ? outcome.match.side2Score : outcome.match.side1Score;
+
+      if (playerScore === null || opponentScore === null) return diff;
+
+      return diff + (playerScore - opponentScore);
+    }, 0);
 }
 
 export function rankPlayerByWins(
