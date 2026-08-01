@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { getTournamentDetail, getTournamentStandings, type MatchDetail } from "@/lib/data/tournamentDetail";
 import { recordScore, endTournament } from "@/lib/actions/matches";
 import { startTournament, deleteTournament } from "@/lib/actions/tournaments";
+import { createPlayer } from "@/lib/actions/players";
+import { getAllPlayers } from "@/lib/data/players";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { MatchScoreForm } from "@/components/tournaments/MatchScoreForm";
@@ -9,12 +11,17 @@ import { EndTournamentButton } from "@/components/tournaments/EndTournamentButto
 import { StartTournamentButton } from "@/components/tournaments/StartTournamentButton";
 import { DeleteTournamentButton } from "@/components/tournaments/DeleteTournamentButton";
 import { TournamentStandingsTable } from "@/components/tournaments/TournamentStandingsTable";
+import { TournamentDetailActions } from "@/components/tournaments/TournamentDetailActions";
 
 import { Tabs } from "@/components/Tabs";
 
 export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [tournament, standings] = await Promise.all([getTournamentDetail(id), getTournamentStandings(id)]);
+  const [tournament, standings, availablePlayers] = await Promise.all([
+    getTournamentDetail(id),
+    getTournamentStandings(id),
+    getAllPlayers(),
+  ]);
   if (!tournament) notFound();
 
   const rounds = new Map<number, MatchDetail[]>();
@@ -33,16 +40,12 @@ export default async function TournamentDetailPage({ params }: { params: Promise
     <main className="max-w-container-max mx-auto px-gutter py-8 space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="font-headline text-3xl font-bold">{tournament.name}</h1>
-        <div className="flex items-center gap-3">
-          <Badge>{tournament.status.replace("_", " ")}</Badge>
-          {isScheduled && <StartTournamentButton onStart={startTournament.bind(null, tournament.id)} />}
-          {!isCompleted && !isScheduled && <EndTournamentButton onEnd={endTournament.bind(null, tournament.id)} />}
-          <DeleteTournamentButton
-            tournamentName={tournament.name}
-            onDelete={deleteTournament.bind(null, tournament.id)}
-            redirectTo="/tournaments"
-          />
-        </div>
+        <TournamentDetailActions
+          tournament={tournament}
+          availablePlayers={availablePlayers}
+          isScheduled={isScheduled}
+          isCompleted={isCompleted}
+        />
       </div>
 
       <Tabs

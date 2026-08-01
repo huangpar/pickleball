@@ -30,6 +30,7 @@ export interface TournamentDetail {
   matches: MatchDetail[];
   participants: { id: string; name: string }[];
   byes: RoundBye[];
+  numRounds: number | null;
 }
 
 export interface TournamentParticipant {
@@ -56,6 +57,7 @@ export async function getTournamentDetail(tournamentId: string): Promise<Tournam
     status: tournament.status,
     matchFormat: tournament.matchFormat,
     participants: participants.map((p) => ({ id: p.id, name: p.name })),
+    numRounds: tournament.numRounds,
   };
 
   const matchRows = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
