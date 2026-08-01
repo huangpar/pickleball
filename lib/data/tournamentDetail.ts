@@ -131,13 +131,24 @@ export async function getTournamentStandings(tournamentId: string): Promise<Stan
   for (const participant of participants) {
     const allOutcomes = await getPlayerMatchOutcomes(participant.id);
     const outcomes = allOutcomes.filter((o) => tournamentMatchIds.has(o.matchId));
+
+    // Convert PlayerMatchOutcome to MatchOutcome for stats functions
+    const matchOutcomes = outcomes.map((o) => ({
+      matchId: o.matchId,
+      playedAt: new Date(),
+      won: o.won,
+    }));
+
+    const wins = computeWins(matchOutcomes);
     rows.push({
       id: participant.id,
       name: participant.name,
-      wins: computeWins(outcomes),
+      wins,
+      losses: outcomes.length - wins,
       matchesPlayed: outcomes.length,
-      winPercentage: computeWinPercentage(outcomes),
-      trend: computeTrend(outcomes),
+      winPercentage: computeWinPercentage(matchOutcomes),
+      pointDifferential: 0, // TODO: implement if needed for tournaments
+      trend: computeTrend(matchOutcomes),
     });
   }
 

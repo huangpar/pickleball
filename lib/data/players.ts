@@ -13,6 +13,17 @@ export interface DateRange {
   to?: Date;
 }
 
+export interface PlayerMatchOutcome {
+  matchId: string;
+  side: number;
+  won: boolean;
+  match: {
+    status: "final" | "scheduled";
+    side1Score: number | null;
+    side2Score: number | null;
+  };
+}
+
 export async function getAllPlayers(): Promise<PlayerRow[]> {
   return db.select({ id: players.id, name: players.name }).from(players);
 }
@@ -25,7 +36,7 @@ export async function getPlayerById(id: string): Promise<PlayerRow | null> {
   return rows[0] ?? null;
 }
 
-export async function getPlayerMatchOutcomes(playerId: string, dateRange?: DateRange): Promise<MatchOutcome[]> {
+export async function getPlayerMatchOutcomes(playerId: string, dateRange?: DateRange): Promise<PlayerMatchOutcome[]> {
   const conditions: SQL[] = [eq(matchParticipants.playerId, playerId), eq(matches.status, "final")];
   if (dateRange?.from) conditions.push(gte(tournaments.startedAt, dateRange.from));
   if (dateRange?.to) conditions.push(lte(tournaments.startedAt, dateRange.to));
@@ -33,10 +44,11 @@ export async function getPlayerMatchOutcomes(playerId: string, dateRange?: DateR
   const rows = await db
     .select({
       matchId: matches.id,
-      playedAt: matches.playedAt,
       side: matchParticipants.side,
+      status: matches.status,
       side1Score: matches.side1Score,
       side2Score: matches.side2Score,
+      playedAt: matches.playedAt,
     })
     .from(matchParticipants)
     .innerJoin(matches, eq(matchParticipants.matchId, matches.id))
@@ -45,10 +57,19 @@ export async function getPlayerMatchOutcomes(playerId: string, dateRange?: DateR
 
   return rows
     .filter((r) => r.playedAt !== null && r.side1Score !== null && r.side2Score !== null)
+    .sort((a, b) => a.playedAt!.getTime() - b.playedAt!.getTime())
     .map((r) => {
       const ownScore = r.side === 1 ? r.side1Score! : r.side2Score!;
       const otherScore = r.side === 1 ? r.side2Score! : r.side1Score!;
-      return { matchId: r.matchId, playedAt: r.playedAt as Date, won: ownScore > otherScore };
-    })
-    .sort((a, b) => a.playedAt.getTime() - b.playedAt.getTime());
+      return {
+        matchId: r.matchId,
+        side: r.side,
+        won: ownScore > otherScore,
+        match: {
+          status: "final" as const,
+          side1Score: r.side1Score!,
+          side2Score: r.side2Score!,
+        },
+      };
+    });
 }

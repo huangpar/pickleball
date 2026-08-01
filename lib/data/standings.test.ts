@@ -124,4 +124,135 @@ describe("getStandings", () => {
     const bothRow = both.find((s) => s.id === p1.id);
     expect(bothRow?.matchesPlayed).toBe(2);
   });
+
+  it("computes losses as matchesPlayed - wins", async () => {
+    // Create player with 3 wins out of 5 matches
+    const [player] = await db.insert(players).values({ name: "__Standings Losses Test__" }).returning();
+    const [opponent] = await db.insert(players).values({ name: "__Standings Losses Opponent__" }).returning();
+    insertedPlayerIds.push(player.id, opponent.id);
+
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Losses Test Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles" })
+      .returning();
+    insertedTournamentIds.push(tournament.id);
+
+    // Create 5 matches: 3 wins, 2 losses
+    const matchIds: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const isWin = i < 3;
+      const [match] = await db
+        .insert(matches)
+        .values({
+          tournamentId: tournament.id,
+          courtNumber: 1,
+          roundNumber: i + 1,
+          side1Score: isWin ? 11 : 4,
+          side2Score: isWin ? 4 : 11,
+          status: "final",
+          playedAt: new Date(),
+        })
+        .returning();
+      matchIds.push(match.id);
+    }
+    insertedMatchIds.push(...matchIds);
+
+    await db.insert(matchParticipants).values(
+      matchIds.map((matchId, i) => ({
+        matchId,
+        playerId: player.id,
+        side: 1,
+      }))
+    );
+    await db.insert(matchParticipants).values(
+      matchIds.map((matchId) => ({
+        matchId,
+        playerId: opponent.id,
+        side: 2,
+      }))
+    );
+
+    const standings = await getStandings();
+    const row = standings.find((s) => s.id === player.id);
+
+    expect(row?.wins).toBe(3);
+    expect(row?.matchesPlayed).toBe(5);
+    expect(row?.losses).toBe(2); // 5 - 3
+  });
+
+  it("computes point differential correctly", async () => {
+    const [player] = await db.insert(players).values({ name: "__Point Diff Player__" }).returning();
+    const [opponent1] = await db.insert(players).values({ name: "__Point Diff Opponent 1__" }).returning();
+    const [opponent2] = await db.insert(players).values({ name: "__Point Diff Opponent 2__" }).returning();
+    insertedPlayerIds.push(player.id, opponent1.id, opponent2.id);
+
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({
+        name: "__Point Diff Test Tournament__",
+        numCourts: 1,
+        matchDurationMinutes: 30,
+        matchFormat: "singles",
+      })
+      .returning();
+    insertedTournamentIds.push(tournament.id);
+
+    // Match 1: player on side1 (10) vs opponent1 on side2 (8) → +2
+    const [match1] = await db
+      .insert(matches)
+      .values({
+        tournamentId: tournament.id,
+        courtNumber: 1,
+        roundNumber: 1,
+        side1Score: 10,
+        side2Score: 8,
+        status: "final",
+        playedAt: new Date(),
+      })
+      .returning();
+
+    // Match 2: player on side2 (7) vs opponent2 on side1 (11) → -4
+    const [match2] = await db
+      .insert(matches)
+      .values({
+        tournamentId: tournament.id,
+        courtNumber: 1,
+        roundNumber: 2,
+        side1Score: 11,
+        side2Score: 7,
+        status: "final",
+        playedAt: new Date(),
+      })
+      .returning();
+
+    // Match 3: unfinished (not counted)
+    const [match3] = await db
+      .insert(matches)
+      .values({
+        tournamentId: tournament.id,
+        courtNumber: 1,
+        roundNumber: 3,
+        side1Score: null,
+        side2Score: null,
+        status: "scheduled",
+        playedAt: new Date(),
+      })
+      .returning();
+
+    insertedMatchIds.push(match1.id, match2.id, match3.id);
+
+    await db.insert(matchParticipants).values([
+      { matchId: match1.id, playerId: player.id, side: 1 },
+      { matchId: match1.id, playerId: opponent1.id, side: 2 },
+      { matchId: match2.id, playerId: player.id, side: 2 },
+      { matchId: match2.id, playerId: opponent2.id, side: 1 },
+      { matchId: match3.id, playerId: player.id, side: 1 },
+      { matchId: match3.id, playerId: opponent1.id, side: 2 },
+    ]);
+
+    const standings = await getStandings();
+    const row = standings.find((s) => s.id === player.id);
+
+    expect(row?.pointDifferential).toBe(-2); // 10-8 + 7-11 = 2 - 4 = -2
+  });
 });
