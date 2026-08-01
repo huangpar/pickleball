@@ -163,17 +163,6 @@ export async function editTournament(
     schedule = generateSinglesSchedule(participantIds, tournament.numCourts);
   } else {
     if (tournament.teamMode === "fixed") {
-      const participantSet = new Set(participantIds);
-      const oldParticipants = await db
-        .select({ playerId: tournamentParticipants.playerId })
-        .from(tournamentParticipants)
-        .where(eq(tournamentParticipants.tournamentId, tournamentId));
-      const oldTeamStrings = await db
-        .select()
-        .from(matches)
-        .where(eq(matches.tournamentId, tournamentId))
-        .limit(1);
-
       throw new Error("Cannot re-edit fixed teams (no stored mapping)");
     } else if (tournament.teamMode === "rotating") {
       schedule = generateRotatingDoublesSchedule(participantIds, tournament.numCourts, numRounds);
