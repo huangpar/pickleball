@@ -24,3 +24,16 @@ export function computeRotatingDoublesPreview(
   const totalMatches = matchesPerRound * numRounds;
   return { totalMatches, estimatedMinutes: estimateMinutes(totalMatches, numCourts, matchDurationMinutes) };
 }
+
+export function computeHybridDoublesPreview(
+  fixedPairCount: number,
+  rotatingPlayerCount: number,
+  numCourts: number,
+  matchDurationMinutes: number,
+  numRounds: number
+) {
+  const totalTeams = fixedPairCount + Math.floor(rotatingPlayerCount / 2);
+  const matchesPerRound = Math.floor(totalTeams / 2);
+  const totalMatches = matchesPerRound * numRounds;
+  return { totalMatches, estimatedMinutes: estimateMinutes(totalMatches, numCourts, matchDurationMinutes) };
+}

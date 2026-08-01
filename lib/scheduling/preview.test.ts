@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { computeSinglesPreview, computeFixedDoublesPreview, computeRotatingDoublesPreview } from "./preview";
+import {
+  computeSinglesPreview,
+  computeFixedDoublesPreview,
+  computeRotatingDoublesPreview,
+  computeHybridDoublesPreview,
+} from "./preview";
 
 describe("computeSinglesPreview", () => {
   it("computes total matches and estimated duration for 4 participants on 2 courts", () => {
@@ -26,5 +31,20 @@ describe("computeRotatingDoublesPreview", () => {
     const result = computeRotatingDoublesPreview(8, 2, 30, 5); // 8 players -> 2 matches/round
     expect(result.totalMatches).toBe(10); // 2 matches/round * 5 rounds
     expect(result.estimatedMinutes).toBe(150); // ceil(10/2) * 30
+  });
+});
+
+describe("computeHybridDoublesPreview", () => {
+  it("computes total matches from fixed pairs plus rotating pairs, times rounds", () => {
+    // 2 fixed pairs + 4 rotating players (2 rotating pairs) = 4 teams/round -> 2 matches/round
+    const result = computeHybridDoublesPreview(2, 4, 2, 30, 5);
+    expect(result.totalMatches).toBe(10); // 2 matches/round * 5 rounds
+    expect(result.estimatedMinutes).toBe(150); // ceil(10/2) * 30
+  });
+
+  it("accounts for an odd rotating player leaving one rotating player unpaired that round", () => {
+    // 1 fixed pair + 3 rotating players (floor(3/2)=1 rotating pair) = 2 teams/round -> 1 match/round
+    const result = computeHybridDoublesPreview(1, 3, 2, 30, 4);
+    expect(result.totalMatches).toBe(4); // 1 match/round * 4 rounds
   });
 });
