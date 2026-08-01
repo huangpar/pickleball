@@ -31,7 +31,7 @@ export function RoundRobinSetupForm({
   const [matchDurationMinutes, setMatchDurationMinutes] = useState(30);
   const [matchFormat, setMatchFormat] = useState<MatchFormat>("singles");
   const [teamMode, setTeamMode] = useState<TeamMode>("fixed");
-  const [numRounds, setNumRounds] = useState<number | "">(4);
+  const [numRounds, setNumRounds] = useState<number | "">(12);
   const [availablePlayers, setAvailablePlayers] = useState<PlayerRow[]>(initialPlayers);
   const [selectedOrder, setSelectedOrder] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);

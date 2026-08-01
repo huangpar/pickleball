@@ -24,7 +24,9 @@ export function ParticipantPicker({
   };
 }) {
   const [filter, setFilter] = useState("");
-  const filtered = availablePlayers.filter((p) => p.name.toLowerCase().includes(filter.toLowerCase()));
+  const filtered = availablePlayers
+    .filter((p) => p.name.toLowerCase().includes(filter.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   async function handleCreate(formData: FormData) {
     const player = await onCreatePlayer(formData);
