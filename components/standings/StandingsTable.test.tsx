@@ -4,9 +4,9 @@ import { StandingsTable } from "./StandingsTable";
 import type { StandingRow } from "@/lib/standings";
 
 const standings: StandingRow[] = [
-  { id: "a", name: "Alex", wins: 5, matchesPlayed: 10, winPercentage: 90, trend: "flat" },
-  { id: "b", name: "Bo", wins: 8, matchesPlayed: 9, winPercentage: 50, trend: "up" },
-  { id: "c", name: "Cy", wins: 2, matchesPlayed: 4, winPercentage: 99, trend: "down" },
+  { id: "a", name: "Alex", wins: 5, losses: 5, matchesPlayed: 10, winPercentage: 90, pointDifferential: 8, trend: "flat" },
+  { id: "b", name: "Bo", wins: 8, losses: 1, matchesPlayed: 9, winPercentage: 50, pointDifferential: 12, trend: "up" },
+  { id: "c", name: "Cy", wins: 2, losses: 2, matchesPlayed: 4, winPercentage: 99, pointDifferential: -8, trend: "down" },
 ];
 
 describe("StandingsTable", () => {
@@ -38,5 +38,32 @@ describe("StandingsTable", () => {
     expect(cards).toHaveTextContent("Alex");
     expect(cards).toHaveTextContent("Bo");
     expect(cards).toHaveTextContent("Cy");
+  });
+
+  it("displays W-L Record column on desktop table", () => {
+    const testStandings: StandingRow[] = [
+      { id: "p1", name: "Alice", wins: 5, losses: 2, matchesPlayed: 7, winPercentage: 71, pointDifferential: 12, trend: "up" },
+    ];
+    render(<StandingsTable initialStandings={testStandings} />);
+    expect(screen.getByText("5W-2L")).toBeInTheDocument();
+  });
+
+  it("displays Point Diff column with correct formatting", () => {
+    const testStandings: StandingRow[] = [
+      { id: "p1", name: "Alice", wins: 5, losses: 2, matchesPlayed: 7, winPercentage: 71, pointDifferential: 12, trend: "up" },
+      { id: "p2", name: "Bob", wins: 3, losses: 4, matchesPlayed: 7, winPercentage: 43, pointDifferential: -8, trend: "down" },
+    ];
+    render(<StandingsTable initialStandings={testStandings} />);
+    expect(screen.getByText("+12")).toBeInTheDocument();
+    expect(screen.getByText("-8")).toBeInTheDocument();
+  });
+
+  it("displays compressed metrics on mobile cards", () => {
+    const testStandings: StandingRow[] = [
+      { id: "p1", name: "Alice", wins: 5, losses: 2, matchesPlayed: 7, winPercentage: 71, pointDifferential: 12, trend: "up" },
+    ];
+    render(<StandingsTable initialStandings={testStandings} />);
+    // Mobile card should show "5W-2L · +12 · ↑"
+    expect(screen.getByText(/5W-2L.*\+12/)).toBeInTheDocument();
   });
 });

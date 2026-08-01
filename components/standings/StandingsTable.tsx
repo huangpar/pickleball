@@ -62,7 +62,9 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
               <th className="p-4">Rank</th>
               <th className="p-4">Player</th>
               <th className="p-4">Wins</th>
+              <th className="p-4">W-L Record</th>
               <th className="p-4">Win %</th>
+              <th className="p-4">Point Diff</th>
               <th className="p-4">Matches</th>
               <th className="p-4">Trend</th>
             </tr>
@@ -78,7 +80,15 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
                   </div>
                 </td>
                 <td className="p-4">{row.wins}</td>
+                <td className="p-4 font-semibold">{row.wins}W-{row.losses}L</td>
                 <td className="p-4">{row.winPercentage}%</td>
+                <td className={`p-4 font-semibold ${
+                  row.pointDifferential > 0 ? "text-green-600" :
+                  row.pointDifferential < 0 ? "text-red-600" :
+                  "text-on-surface-variant"
+                }`}>
+                  {row.pointDifferential > 0 ? "+" : ""}{row.pointDifferential}
+                </td>
                 <td className="p-4">{row.matchesPlayed}</td>
                 <td className="p-4">{row.trend === "up" ? "↑" : row.trend === "down" ? "↓" : "—"}</td>
               </tr>
@@ -96,7 +106,7 @@ export function StandingsTable({ initialStandings }: { initialStandings: Standin
               <div>
                 <p className="font-body font-medium">{row.name}</p>
                 <p className="font-mono text-xs text-on-surface-variant">
-                  Trend: {row.trend === "up" ? "↑" : row.trend === "down" ? "↓" : "—"}
+                  {row.wins}W-{row.losses}L · {row.pointDifferential > 0 ? "+" : ""}{row.pointDifferential} · {row.trend === "up" ? "↑" : row.trend === "down" ? "↓" : "—"}
                 </p>
               </div>
             </div>
