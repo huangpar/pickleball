@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { db } from "@/lib/db/client";
 import { players, tournaments, tournamentParticipants, matches, matchParticipants } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { generateBracket, startTournament, deleteTournament } from "./tournaments";
+import { generateBracket, startTournament, deleteTournament, editTournament } from "./tournaments";
 
 describe("generateBracket", () => {
   const insertedPlayerIds: string[] = [];
@@ -45,7 +45,7 @@ describe("generateBracket", () => {
     createdTournamentIds.push(tournamentId);
 
     const [tournamentRow] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
-    expect(tournamentRow.status).toBe("scheduled");
+    expect(tournamentRow.status).toBe("setup");
     expect(tournamentRow.matchFormat).toBe("singles");
 
     const matchRows = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
@@ -119,6 +119,78 @@ describe("generateBracket", () => {
 
     await expect(generateBracket(formData)).rejects.toThrow("Select at least 2 participants");
   });
+
+  it("rejects edit if tournament is not in setup status", async () => {
+    const [p1] = await db.insert(players).values({ name: "__Edit P1__" }).returning();
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({
+        name: "__Edit Tournament__",
+        numCourts: 1,
+        matchDurationMinutes: 30,
+        matchFormat: "singles",
+        status: "in_progress",
+      })
+      .returning();
+    insertedPlayerIds.push(p1.id);
+    createdTournamentIds.push(tournament.id);
+
+    await expect(editTournament(tournament.id, [p1.id], 1)).rejects.toThrow(
+      "Tournament is not in setup status"
+    );
+  });
+
+  it("successfully updates participants for a setup tournament", async () => {
+    const [p1] = await db.insert(players).values({ name: "__Edit P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Edit P2__" }).returning();
+    const [p3] = await db.insert(players).values({ name: "__Edit P3__" }).returning();
+    insertedPlayerIds.push(p1.id, p2.id, p3.id);
+
+    const formData = new FormData();
+    formData.set("name", "__Setup Tournament__");
+    formData.set("numCourts", "1");
+    formData.set("matchDurationMinutes", "30");
+    formData.set("matchFormat", "singles");
+    formData.append("participantIds", p1.id);
+    formData.append("participantIds", p2.id);
+
+    const tournamentId = await generateBracket(formData);
+    createdTournamentIds.push(tournamentId);
+
+    const [originalMatch] = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
+    expect(originalMatch).toBeDefined();
+
+    await editTournament(tournamentId, [p1.id, p2.id, p3.id], 1);
+
+    const [updatedTournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
+    const participants = await db.select().from(tournamentParticipants).where(eq(tournamentParticipants.tournamentId, tournamentId));
+    expect(participants).toHaveLength(3);
+    expect(new Set(participants.map(p => p.playerId))).toEqual(new Set([p1.id, p2.id, p3.id]));
+
+    const newMatches = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
+    expect(newMatches).toHaveLength(3); // C(3,2) for singles
+  });
+
+  it("rejects edit if fewer than 2 participants", async () => {
+    const [p1] = await db.insert(players).values({ name: "__Edit Lone__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Edit Lone2__" }).returning();
+    insertedPlayerIds.push(p1.id, p2.id);
+
+    const formData = new FormData();
+    formData.set("name", "__Setup Lone__");
+    formData.set("numCourts", "1");
+    formData.set("matchDurationMinutes", "30");
+    formData.set("matchFormat", "singles");
+    formData.append("participantIds", p1.id);
+    formData.append("participantIds", p2.id);
+
+    const tournamentId = await generateBracket(formData);
+    createdTournamentIds.push(tournamentId);
+
+    await expect(editTournament(tournamentId, [p1.id], 1)).rejects.toThrow(
+      "Select at least 2 participants"
+    );
+  });
 });
 
 describe("startTournament", () => {
@@ -131,7 +203,7 @@ describe("startTournament", () => {
   it("moves a scheduled tournament to in_progress and records the start time", async () => {
     const [tournament] = await db
       .insert(tournaments)
-      .values({ name: "__Start Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .values({ name: "__Start Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "setup" })
       .returning();
     tournamentIds.push(tournament.id);
 
@@ -175,7 +247,7 @@ describe("deleteTournament", () => {
 
     const [tournament] = await db
       .insert(tournaments)
-      .values({ name: "__Delete Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .values({ name: "__Delete Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "setup" })
       .returning();
     await db.insert(tournamentParticipants).values([
       { tournamentId: tournament.id, playerId: p1.id },

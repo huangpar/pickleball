@@ -16,6 +16,7 @@ export async function generateBracket(formData: FormData): Promise<string> {
   const matchDurationMinutes = Number(formData.get("matchDurationMinutes"));
   const matchFormat = String(formData.get("matchFormat"));
   const participantIds = formData.getAll("participantIds").map(String);
+  const uniqueParticipantIds = [...new Set(participantIds)];
 
   if (!name) throw new Error("Tournament name is required");
   if (!Number.isInteger(numCourts) || numCourts < 1) throw new Error("Number of courts must be at least 1");
@@ -23,14 +24,14 @@ export async function generateBracket(formData: FormData): Promise<string> {
     throw new Error("Match duration must be at least 1 minute");
   }
   if (matchFormat !== "singles" && matchFormat !== "doubles") throw new Error("Invalid match format");
-  if (participantIds.length < 2) throw new Error("Select at least 2 participants");
+  if (uniqueParticipantIds.length < 2) throw new Error("Select at least 2 participants");
 
   let schedule: ScheduledMatch[];
   let teamMode: "fixed" | "rotating" | "hybrid" | null = null;
   let numRounds: number | null = null;
 
   if (matchFormat === "singles") {
-    schedule = generateSinglesSchedule(participantIds, numCourts);
+    schedule = generateSinglesSchedule(uniqueParticipantIds, numCourts);
   } else {
     teamMode = String(formData.get("teamMode")) as "fixed" | "rotating" | "hybrid";
     if (teamMode !== "fixed" && teamMode !== "rotating" && teamMode !== "hybrid") {
@@ -48,7 +49,7 @@ export async function generateBracket(formData: FormData): Promise<string> {
     } else if (teamMode === "rotating") {
       numRounds = Number(formData.get("numRounds"));
       if (!Number.isInteger(numRounds) || numRounds < 1) throw new Error("Number of rounds must be at least 1");
-      schedule = generateRotatingDoublesSchedule(participantIds, numCourts, numRounds);
+      schedule = generateRotatingDoublesSchedule(uniqueParticipantIds, numCourts, numRounds);
     } else {
       numRounds = Number(formData.get("numRounds"));
       if (!Number.isInteger(numRounds) || numRounds < 1) throw new Error("Number of rounds must be at least 1");
@@ -58,7 +59,7 @@ export async function generateBracket(formData: FormData): Promise<string> {
         return [a, b];
       });
       const fixedPairPlayerIds = new Set(fixedPairs.flat());
-      const rotatingPlayerIds = participantIds.filter((id) => !fixedPairPlayerIds.has(id));
+      const rotatingPlayerIds = uniqueParticipantIds.filter((id) => !fixedPairPlayerIds.has(id));
       schedule = generateHybridDoublesSchedule(fixedPairs, rotatingPlayerIds, numCourts, numRounds);
     }
   }
@@ -67,12 +68,12 @@ export async function generateBracket(formData: FormData): Promise<string> {
 
   const [tournament] = await db
     .insert(tournaments)
-    .values({ name, numCourts, matchDurationMinutes, matchFormat, teamMode, numRounds, status: "scheduled" })
+    .values({ name, numCourts, matchDurationMinutes, matchFormat, teamMode, numRounds, status: "setup" })
     .returning();
 
   await db
     .insert(tournamentParticipants)
-    .values(participantIds.map((playerId) => ({ tournamentId: tournament.id, playerId })));
+    .values(uniqueParticipantIds.map((playerId) => ({ tournamentId: tournament.id, playerId })));
 
   for (const scheduledMatch of schedule) {
     const [insertedMatch] = await db
@@ -101,7 +102,7 @@ export async function generateBracket(formData: FormData): Promise<string> {
 export async function startTournament(tournamentId: string): Promise<void> {
   const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
   if (!tournament) throw new Error("Tournament not found");
-  if (tournament.status !== "scheduled") {
+  if (tournament.status !== "setup") {
     throw new Error("Tournament has already been started");
   }
 
@@ -130,6 +131,79 @@ export async function deleteTournament(tournamentId: string): Promise<void> {
 
   safeRevalidatePath("/tournaments");
   safeRevalidatePath("/");
+}
+
+export async function editTournament(
+  tournamentId: string,
+  participantIds: string[],
+  numRounds: number
+): Promise<void> {
+  const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
+  if (!tournament) throw new Error("Tournament not found");
+  if (tournament.status !== "setup") throw new Error("Tournament is not in setup status");
+
+  if (participantIds.length < 2) throw new Error("Select at least 2 participants");
+
+  const matchRows = await db.select({ id: matches.id }).from(matches).where(eq(matches.tournamentId, tournamentId));
+  const matchIds = matchRows.map((m) => m.id);
+  if (matchIds.length > 0) {
+    await db.delete(matchParticipants).where(inArray(matchParticipants.matchId, matchIds));
+    await db.delete(matches).where(inArray(matches.id, matchIds));
+  }
+
+  await db.delete(tournamentParticipants).where(eq(tournamentParticipants.tournamentId, tournamentId));
+  await db.insert(tournamentParticipants).values(participantIds.map((playerId) => ({ tournamentId, playerId })));
+
+  if (numRounds !== tournament.numRounds) {
+    await db.update(tournaments).set({ numRounds }).where(eq(tournaments.id, tournamentId));
+  }
+
+  let schedule: ScheduledMatch[];
+  if (tournament.matchFormat === "singles") {
+    schedule = generateSinglesSchedule(participantIds, tournament.numCourts);
+  } else {
+    if (tournament.teamMode === "fixed") {
+      const participantSet = new Set(participantIds);
+      const oldParticipants = await db
+        .select({ playerId: tournamentParticipants.playerId })
+        .from(tournamentParticipants)
+        .where(eq(tournamentParticipants.tournamentId, tournamentId));
+      const oldTeamStrings = await db
+        .select()
+        .from(matches)
+        .where(eq(matches.tournamentId, tournamentId))
+        .limit(1);
+
+      throw new Error("Cannot re-edit fixed teams (no stored mapping)");
+    } else if (tournament.teamMode === "rotating") {
+      schedule = generateRotatingDoublesSchedule(participantIds, tournament.numCourts, numRounds);
+    } else if (tournament.teamMode === "hybrid") {
+      throw new Error("Hybrid re-edit not yet supported (no stored fixed-pair mapping)");
+    } else {
+      throw new Error("Unknown team mode");
+    }
+  }
+
+  for (const scheduledMatch of schedule) {
+    const [insertedMatch] = await db
+      .insert(matches)
+      .values({
+        tournamentId,
+        courtNumber: scheduledMatch.courtNumber,
+        roundNumber: scheduledMatch.roundNumber,
+        status: "scheduled",
+        firstServerId: scheduledMatch.firstServerId,
+      })
+      .returning();
+
+    await db.insert(matchParticipants).values([
+      ...scheduledMatch.side1PlayerIds.map((playerId) => ({ matchId: insertedMatch.id, playerId, side: 1 })),
+      ...scheduledMatch.side2PlayerIds.map((playerId) => ({ matchId: insertedMatch.id, playerId, side: 2 })),
+    ]);
+  }
+
+  safeRevalidatePath("/tournaments");
+  safeRevalidatePath(`/tournaments/${tournamentId}`);
 }
 
 // `revalidatePath` requires an active Next.js request-scoped store and throws
