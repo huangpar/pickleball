@@ -84,6 +84,31 @@ describe("generateBracket", () => {
     expect(participantRows).toHaveLength(4); // 2 players per side
   });
 
+  it("creates a hybrid doubles tournament from fixed pairs plus a rotating pool", async () => {
+    const ids = await insertTestPlayers(6); // 2 fixed-pair players + 4 rotating players
+
+    const formData = new FormData();
+    formData.set("name", "__Bracket Hybrid Tournament__");
+    formData.set("numCourts", "2");
+    formData.set("matchDurationMinutes", "30");
+    formData.set("matchFormat", "doubles");
+    formData.set("teamMode", "hybrid");
+    formData.set("numRounds", "3");
+    ids.forEach((id) => formData.append("participantIds", id));
+    formData.append("fixedPairs", `${ids[0]},${ids[1]}`);
+
+    const tournamentId = await generateBracket(formData);
+    createdTournamentIds.push(tournamentId);
+
+    const [tournamentRow] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
+    expect(tournamentRow.teamMode).toBe("hybrid");
+    expect(tournamentRow.numRounds).toBe(3);
+
+    const matchRows = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
+    expect(matchRows.length).toBeGreaterThan(0);
+    expect(new Set(matchRows.map((m) => m.roundNumber)).size).toBeLessThanOrEqual(3);
+  });
+
   it("rejects fewer than 2 participants", async () => {
     const formData = new FormData();
     formData.set("name", "__Invalid Tournament__");

@@ -12,7 +12,7 @@ export const tournaments = pgTable("tournaments", {
   numCourts: integer("num_courts").notNull(),
   matchDurationMinutes: integer("match_duration_minutes").notNull(),
   matchFormat: text("match_format", { enum: ["singles", "doubles"] }).notNull(),
-  teamMode: text("team_mode", { enum: ["fixed", "rotating"] }),
+  teamMode: text("team_mode", { enum: ["fixed", "rotating", "hybrid"] }),
   numRounds: integer("num_rounds"),
   status: text("status", { enum: ["setup", "scheduled", "in_progress", "completed"] })
     .notNull()

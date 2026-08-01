@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { generateSinglesSchedule } from "@/lib/scheduling/singles";
 import { generateFixedDoublesSchedule } from "@/lib/scheduling/fixedDoubles";
 import { generateRotatingDoublesSchedule } from "@/lib/scheduling/rotatingDoubles";
+import { generateHybridDoublesSchedule } from "@/lib/scheduling/hybridDoubles";
 import type { ScheduledMatch } from "@/lib/scheduling/types";
 
 export async function generateBracket(formData: FormData): Promise<string> {
@@ -25,14 +26,16 @@ export async function generateBracket(formData: FormData): Promise<string> {
   if (participantIds.length < 2) throw new Error("Select at least 2 participants");
 
   let schedule: ScheduledMatch[];
-  let teamMode: "fixed" | "rotating" | null = null;
+  let teamMode: "fixed" | "rotating" | "hybrid" | null = null;
   let numRounds: number | null = null;
 
   if (matchFormat === "singles") {
     schedule = generateSinglesSchedule(participantIds, numCourts);
   } else {
-    teamMode = String(formData.get("teamMode")) as "fixed" | "rotating";
-    if (teamMode !== "fixed" && teamMode !== "rotating") throw new Error("Invalid team mode");
+    teamMode = String(formData.get("teamMode")) as "fixed" | "rotating" | "hybrid";
+    if (teamMode !== "fixed" && teamMode !== "rotating" && teamMode !== "hybrid") {
+      throw new Error("Invalid team mode");
+    }
 
     if (teamMode === "fixed") {
       const teamStrings = formData.getAll("fixedTeams").map(String);
@@ -42,10 +45,21 @@ export async function generateBracket(formData: FormData): Promise<string> {
         return [a, b];
       });
       schedule = generateFixedDoublesSchedule(teams, numCourts);
-    } else {
+    } else if (teamMode === "rotating") {
       numRounds = Number(formData.get("numRounds"));
       if (!Number.isInteger(numRounds) || numRounds < 1) throw new Error("Number of rounds must be at least 1");
       schedule = generateRotatingDoublesSchedule(participantIds, numCourts, numRounds);
+    } else {
+      numRounds = Number(formData.get("numRounds"));
+      if (!Number.isInteger(numRounds) || numRounds < 1) throw new Error("Number of rounds must be at least 1");
+      const pairStrings = formData.getAll("fixedPairs").map(String);
+      const fixedPairs: [string, string][] = pairStrings.map((t) => {
+        const [a, b] = t.split(",");
+        return [a, b];
+      });
+      const fixedPairPlayerIds = new Set(fixedPairs.flat());
+      const rotatingPlayerIds = participantIds.filter((id) => !fixedPairPlayerIds.has(id));
+      schedule = generateHybridDoublesSchedule(fixedPairs, rotatingPlayerIds, numCourts, numRounds);
     }
   }
 
