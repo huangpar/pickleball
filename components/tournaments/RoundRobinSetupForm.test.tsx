@@ -40,4 +40,63 @@ describe("RoundRobinSetupForm", () => {
     expect(screen.getByText("Chris Jung & Dana Kim")).toBeInTheDocument();
     expect(screen.getByText(/1 match/i)).toBeInTheDocument(); // C(2,2) teams = 1 match
   });
+
+  it("shows the Hybrid team mode option for doubles format", () => {
+    render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={vi.fn()} onCreatePlayer={vi.fn()} />);
+
+    fireEvent.click(screen.getByLabelText("Doubles"));
+
+    expect(screen.getByLabelText("Hybrid")).toBeInTheDocument();
+  });
+
+  it("locks two clicked players into a fixed pair in hybrid mode, leaving the rest as the rotating pool", () => {
+    render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={vi.fn()} onCreatePlayer={vi.fn()} />);
+
+    fireEvent.click(screen.getByLabelText("Alex Sterling"));
+    fireEvent.click(screen.getByLabelText("Ben Rivera"));
+    fireEvent.click(screen.getByLabelText("Chris Jung"));
+    fireEvent.click(screen.getByLabelText("Dana Kim"));
+    fireEvent.click(screen.getByLabelText("Doubles"));
+    fireEvent.click(screen.getByLabelText("Hybrid"));
+
+    fireEvent.click(screen.getByLabelText("Alex Sterling")); // arm
+    fireEvent.click(screen.getByLabelText("Ben Rivera")); // lock
+
+    expect(screen.getByText("Alex Sterling & Ben Rivera")).toBeInTheDocument();
+  });
+
+  it("unlocks a fixed pair when either member is clicked again", () => {
+    render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={vi.fn()} onCreatePlayer={vi.fn()} />);
+
+    fireEvent.click(screen.getByLabelText("Alex Sterling"));
+    fireEvent.click(screen.getByLabelText("Ben Rivera"));
+    fireEvent.click(screen.getByLabelText("Doubles"));
+    fireEvent.click(screen.getByLabelText("Hybrid"));
+    fireEvent.click(screen.getByLabelText("Alex Sterling"));
+    fireEvent.click(screen.getByLabelText("Ben Rivera"));
+    expect(screen.getByText("Alex Sterling & Ben Rivera")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Alex Sterling")); // unlock
+
+    expect(screen.queryByText("Alex Sterling & Ben Rivera")).not.toBeInTheDocument();
+  });
+
+  it("shows the Number of Rounds input and computes the preview for hybrid mode", () => {
+    render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={vi.fn()} onCreatePlayer={vi.fn()} />);
+
+    fireEvent.click(screen.getByLabelText("Alex Sterling"));
+    fireEvent.click(screen.getByLabelText("Ben Rivera"));
+    fireEvent.click(screen.getByLabelText("Chris Jung"));
+    fireEvent.click(screen.getByLabelText("Dana Kim"));
+    fireEvent.click(screen.getByLabelText("Doubles"));
+    fireEvent.click(screen.getByLabelText("Hybrid"));
+    fireEvent.click(screen.getByLabelText("Alex Sterling"));
+    fireEvent.click(screen.getByLabelText("Ben Rivera"));
+
+    const roundsInput = screen.getByLabelText(/Number of Rounds/i);
+    fireEvent.change(roundsInput, { target: { value: "3" } });
+
+    // 1 fixed pair + 2 rotating players (1 rotating pair) = 2 teams/round -> 1 match/round * 3 rounds = 3
+    expect(screen.getByText(/3 matches/i)).toBeInTheDocument();
+  });
 });

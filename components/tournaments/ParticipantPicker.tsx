@@ -10,12 +10,18 @@ export function ParticipantPicker({
   onToggle,
   onPlayerAdded,
   onCreatePlayer,
+  pairLocking,
 }: {
   availablePlayers: PlayerRow[];
   selectedIds: string[];
   onToggle: (id: string) => void;
   onPlayerAdded: (player: PlayerRow) => void;
   onCreatePlayer: (formData: FormData) => Promise<PlayerRow>;
+  pairLocking?: {
+    lockedPairs: [string, string][];
+    armedId: string | null;
+    onPairClick: (id: string) => void;
+  };
 }) {
   const [filter, setFilter] = useState("");
   const filtered = availablePlayers.filter((p) => p.name.toLowerCase().includes(filter.toLowerCase()));
@@ -24,6 +30,14 @@ export function ParticipantPicker({
     const player = await onCreatePlayer(formData);
     onPlayerAdded(player);
     onToggle(player.id);
+  }
+
+  function handleRowClick(id: string, isSelected: boolean) {
+    if (pairLocking && isSelected) {
+      pairLocking.onPairClick(id);
+    } else {
+      onToggle(id);
+    }
   }
 
   return (
@@ -37,20 +51,24 @@ export function ParticipantPicker({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-80 overflow-y-auto">
         {filtered.map((player) => {
           const isSelected = selectedIds.includes(player.id);
+          const isLocked = pairLocking?.lockedPairs.some((pair) => pair.includes(player.id)) ?? false;
+          const isArmed = pairLocking?.armedId === player.id;
           return (
             <label
               key={player.id}
               className={`flex items-center justify-between border rounded-lg px-3 py-2 cursor-pointer transition-colors ${
-                isSelected
-                  ? "bg-secondary-container border-secondary-container text-on-secondary-container font-medium"
-                  : "bg-surface-container-lowest border-outline-variant hover:bg-surface-container-low text-on-surface"
+                isLocked
+                  ? "bg-primary-container border-primary-container text-on-primary-container font-medium"
+                  : isSelected
+                    ? `bg-secondary-container border-secondary-container text-on-secondary-container font-medium ${isArmed ? "ring-2 ring-primary" : ""}`
+                    : "bg-surface-container-lowest border-outline-variant hover:bg-surface-container-low text-on-surface"
               }`}
             >
               <input
                 type="checkbox"
                 className="sr-only"
                 checked={isSelected}
-                onChange={() => onToggle(player.id)}
+                onChange={() => handleRowClick(player.id, isSelected)}
                 aria-label={player.name}
               />
               <span className="font-body">

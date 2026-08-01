@@ -9,11 +9,12 @@ import {
   computeSinglesPreview,
   computeFixedDoublesPreview,
   computeRotatingDoublesPreview,
+  computeHybridDoublesPreview,
 } from "@/lib/scheduling/preview";
 import type { PlayerRow } from "@/lib/data/players";
 
 type MatchFormat = "singles" | "doubles";
-type TeamMode = "fixed" | "rotating";
+type TeamMode = "fixed" | "rotating" | "hybrid";
 
 export function RoundRobinSetupForm({
   initialPlayers,
@@ -35,6 +36,8 @@ export function RoundRobinSetupForm({
   const [selectedOrder, setSelectedOrder] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lockedPairs, setLockedPairs] = useState<[string, string][]>([]);
+  const [armedId, setArmedId] = useState<string | null>(null);
 
   const playersById = useMemo(() => new Map(availablePlayers.map((p) => [p.id, p])), [availablePlayers]);
 
@@ -46,6 +49,11 @@ export function RoundRobinSetupForm({
         ])
       : [];
 
+  const rotatingPlayerIds =
+    matchFormat === "doubles" && teamMode === "hybrid"
+      ? selectedOrder.filter((id) => !lockedPairs.some((pair) => pair.includes(id)))
+      : [];
+
   const preview = useMemo(() => {
     const courts = numCourts === "" ? 0 : numCourts;
     const rounds = numRounds === "" ? 0 : numRounds;
@@ -55,11 +63,40 @@ export function RoundRobinSetupForm({
     if (teamMode === "fixed") {
       return computeFixedDoublesPreview(fixedTeams.length, courts, matchDurationMinutes);
     }
+    if (teamMode === "hybrid") {
+      return computeHybridDoublesPreview(lockedPairs.length, rotatingPlayerIds.length, courts, matchDurationMinutes, rounds);
+    }
     return computeRotatingDoublesPreview(selectedOrder.length, courts, matchDurationMinutes, rounds);
-  }, [matchFormat, teamMode, selectedOrder.length, numCourts, matchDurationMinutes, numRounds, fixedTeams.length]);
+  }, [
+    matchFormat,
+    teamMode,
+    selectedOrder.length,
+    numCourts,
+    matchDurationMinutes,
+    numRounds,
+    fixedTeams.length,
+    lockedPairs.length,
+    rotatingPlayerIds.length,
+  ]);
 
   function toggleParticipant(id: string) {
     setSelectedOrder((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
+  }
+
+  function handlePairClick(id: string) {
+    const existingPair = lockedPairs.find((pair) => pair.includes(id));
+    if (existingPair) {
+      setLockedPairs((prev) => prev.filter((pair) => pair !== existingPair));
+      return;
+    }
+    if (armedId === null) {
+      setArmedId(id);
+    } else if (armedId === id) {
+      setArmedId(null);
+    } else {
+      setLockedPairs((prev) => [...prev, [armedId, id]]);
+      setArmedId(null);
+    }
   }
 
   async function handleSubmit() {
@@ -78,6 +115,9 @@ export function RoundRobinSetupForm({
         formData.set("teamMode", teamMode);
         if (teamMode === "rotating") {
           formData.set("numRounds", String(numRounds));
+        } else if (teamMode === "hybrid") {
+          formData.set("numRounds", String(numRounds));
+          lockedPairs.forEach((pair) => formData.append("fixedPairs", pair.join(",")));
         } else {
           fixedTeams.forEach((team) => formData.append("fixedTeams", team.join(",")));
         }
@@ -172,10 +212,20 @@ export function RoundRobinSetupForm({
               />
               Rotating Partners
             </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="teamMode"
+                checked={teamMode === "hybrid"}
+                onChange={() => setTeamMode("hybrid")}
+                aria-label="Hybrid"
+              />
+              Hybrid
+            </label>
           </fieldset>
         )}
 
-        {matchFormat === "doubles" && teamMode === "rotating" && (
+        {matchFormat === "doubles" && (teamMode === "rotating" || teamMode === "hybrid") && (
           <label className="flex flex-col text-sm gap-1">
             Number of Rounds
             <input
@@ -200,6 +250,19 @@ export function RoundRobinSetupForm({
             </ul>
           </div>
         )}
+
+        {matchFormat === "doubles" && teamMode === "hybrid" && lockedPairs.length > 0 && (
+          <div>
+            <h3 className="font-headline text-sm font-semibold mb-2">Fixed Pairs</h3>
+            <ul className="space-y-1">
+              {lockedPairs.map(([a, b], i) => (
+                <li key={i} className="font-body text-sm">
+                  {playersById.get(a)?.name} &amp; {playersById.get(b)?.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </Card>
 
       <Card className="space-y-4">
@@ -210,6 +273,11 @@ export function RoundRobinSetupForm({
           onToggle={toggleParticipant}
           onPlayerAdded={(player) => setAvailablePlayers((prev) => [...prev, player])}
           onCreatePlayer={onCreatePlayer}
+          pairLocking={
+            matchFormat === "doubles" && teamMode === "hybrid"
+              ? { lockedPairs, armedId, onPairClick: handlePairClick }
+              : undefined
+          }
         />
       </Card>
 
