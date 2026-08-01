@@ -15,8 +15,9 @@ export function TournamentStandingsTable({ standings }: { standings: StandingRow
             <tr className="text-left font-mono text-xs text-on-surface-variant uppercase border-b border-surface-container-high">
               <th className="p-4">Rank</th>
               <th className="p-4">Player</th>
-              <th className="p-4">Wins</th>
+              <th className="p-4">W-L Record</th>
               <th className="p-4">Win %</th>
+              <th className="p-4">Point Diff</th>
               <th className="p-4">Matches</th>
             </tr>
           </thead>
@@ -30,8 +31,9 @@ export function TournamentStandingsTable({ standings }: { standings: StandingRow
                     {row.name}
                   </div>
                 </td>
-                <td className="p-4">{row.wins}</td>
+                <td className="p-4">{row.wins}W-{row.losses}L</td>
                 <td className="p-4">{row.winPercentage}%</td>
+                <td className="p-4">{row.pointDifferential >= 0 ? "+" : ""}{row.pointDifferential}</td>
                 <td className="p-4">{row.matchesPlayed}</td>
               </tr>
             ))}
@@ -45,12 +47,17 @@ export function TournamentStandingsTable({ standings }: { standings: StandingRow
             <div className="flex items-center gap-3">
               <span className="font-mono text-xs text-on-surface-variant">{String(i + 1).padStart(2, "0")}</span>
               <Avatar name={row.name} size="sm" />
-              <p className="font-body font-medium">{row.name}</p>
+              <div>
+                <p className="font-body font-medium">{row.name}</p>
+                <p className="font-mono text-xs text-on-surface-variant">
+                  {row.wins}W-{row.losses}L &middot; {row.pointDifferential >= 0 ? "+" : ""}{row.pointDifferential}
+                </p>
+              </div>
             </div>
             <div className="text-right">
-              <p className="font-headline font-bold">{row.wins}W</p>
+              <p className="font-headline font-bold">{row.winPercentage}%</p>
               <p className="font-mono text-xs text-on-surface-variant">
-                {row.winPercentage}% &middot; {row.matchesPlayed}m
+                {row.matchesPlayed}m
               </p>
             </div>
           </div>

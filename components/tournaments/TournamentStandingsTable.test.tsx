@@ -6,8 +6,8 @@ import type { StandingRow } from "@/lib/standings";
 describe("TournamentStandingsTable", () => {
   it("renders rows already in the order given, ranked from 1", () => {
     const standings: StandingRow[] = [
-      { id: "a", name: "Alex", wins: 3, matchesPlayed: 3, winPercentage: 100, trend: "up" },
-      { id: "b", name: "Bo", wins: 1, matchesPlayed: 3, winPercentage: 33.3, trend: "down" },
+      { id: "a", name: "Alex", wins: 3, losses: 0, matchesPlayed: 3, winPercentage: 100, pointDifferential: 15, trend: "up" },
+      { id: "b", name: "Bo", wins: 1, losses: 2, matchesPlayed: 3, winPercentage: 33.3, pointDifferential: -5, trend: "down" },
     ];
     render(<TournamentStandingsTable standings={standings} />);
 
@@ -25,8 +25,8 @@ describe("TournamentStandingsTable", () => {
 
   it("renders both a desktop table (hidden below md) and a mobile card list (hidden at md and above) with the same rows", () => {
     const standings: StandingRow[] = [
-      { id: "a", name: "Alex", wins: 3, matchesPlayed: 3, winPercentage: 100, trend: "up" },
-      { id: "b", name: "Bo", wins: 1, matchesPlayed: 3, winPercentage: 33.3, trend: "down" },
+      { id: "a", name: "Alex", wins: 3, losses: 0, matchesPlayed: 3, winPercentage: 100, pointDifferential: 15, trend: "up" },
+      { id: "b", name: "Bo", wins: 1, losses: 2, matchesPlayed: 3, winPercentage: 33.3, pointDifferential: -5, trend: "down" },
     ];
     render(<TournamentStandingsTable standings={standings} />);
 
@@ -40,5 +40,16 @@ describe("TournamentStandingsTable", () => {
     expect(cards.className).toContain("md:hidden");
     expect(cards).toHaveTextContent("Alex");
     expect(cards).toHaveTextContent("Bo");
+  });
+
+  it("displays W-L Record and Point Diff on tournament standings", () => {
+    const standings: StandingRow[] = [
+      { id: "p1", name: "Alice", wins: 3, losses: 1, matchesPlayed: 4, winPercentage: 75, pointDifferential: 8, trend: "up" },
+    ];
+
+    render(<TournamentStandingsTable standings={standings} />);
+
+    expect(screen.getByText("3W-1L")).toBeInTheDocument();
+    expect(screen.getByText("+8")).toBeInTheDocument();
   });
 });
