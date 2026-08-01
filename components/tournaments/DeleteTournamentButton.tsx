@@ -64,8 +64,14 @@ export function DeleteTournamentButton({
 
   return (
     <div>
-      <Button variant="tertiary" onClick={handleAskClick} className="text-error">
-        Delete
+      <Button
+        variant="tertiary"
+        onClick={handleAskClick}
+        className="text-error px-2"
+        aria-label={`Delete ${tournamentName}`}
+        title="Delete tournament"
+      >
+        &times;
       </Button>
       {error && <p className="text-error text-sm mt-1">{error}</p>}
     </div>

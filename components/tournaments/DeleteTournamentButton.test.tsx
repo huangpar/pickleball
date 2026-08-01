@@ -9,7 +9,7 @@ describe("DeleteTournamentButton", () => {
     const onDelete = vi.fn().mockResolvedValue(undefined);
     render(<DeleteTournamentButton tournamentName="Test Cup" onDelete={onDelete} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Test Cup" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     await waitFor(() => expect(onDelete).toHaveBeenCalledTimes(1));
@@ -19,7 +19,7 @@ describe("DeleteTournamentButton", () => {
     const onDelete = vi.fn();
     render(<DeleteTournamentButton tournamentName="Test Cup" onDelete={onDelete} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Test Cup" }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(onDelete).not.toHaveBeenCalled();
@@ -30,7 +30,7 @@ describe("DeleteTournamentButton", () => {
     const onDelete = vi.fn().mockRejectedValue(new Error("Tournament not found"));
     render(<DeleteTournamentButton tournamentName="Test Cup" onDelete={onDelete} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Test Cup" }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(await screen.findByText("Tournament not found")).toBeInTheDocument();
