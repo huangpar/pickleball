@@ -142,6 +142,11 @@ export async function editTournament(
   if (!tournament) throw new Error("Tournament not found");
   if (tournament.status !== "setup") throw new Error("Tournament is not in setup status");
 
+  // Validate team mode before any destructive operations
+  if (tournament.teamMode === "fixed" || tournament.teamMode === "hybrid") {
+    throw new Error("Cannot re-edit fixed/hybrid teams (no stored mapping)");
+  }
+
   if (participantIds.length < 2) throw new Error("Select at least 2 participants");
 
   const matchRows = await db.select({ id: matches.id }).from(matches).where(eq(matches.tournamentId, tournamentId));
@@ -161,16 +166,10 @@ export async function editTournament(
   let schedule: ScheduledMatch[];
   if (tournament.matchFormat === "singles") {
     schedule = generateSinglesSchedule(participantIds, tournament.numCourts);
+  } else if (tournament.teamMode === "rotating") {
+    schedule = generateRotatingDoublesSchedule(participantIds, tournament.numCourts, numRounds);
   } else {
-    if (tournament.teamMode === "fixed") {
-      throw new Error("Cannot re-edit fixed teams (no stored mapping)");
-    } else if (tournament.teamMode === "rotating") {
-      schedule = generateRotatingDoublesSchedule(participantIds, tournament.numCourts, numRounds);
-    } else if (tournament.teamMode === "hybrid") {
-      throw new Error("Hybrid re-edit not yet supported (no stored fixed-pair mapping)");
-    } else {
-      throw new Error("Unknown team mode");
-    }
+    throw new Error("Unknown team mode");
   }
 
   for (const scheduledMatch of schedule) {
