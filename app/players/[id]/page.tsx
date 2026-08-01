@@ -3,7 +3,7 @@ import { getPlayerById, getPlayerMatchOutcomes } from "@/lib/data/players";
 import { getPlayerMatchHistory } from "@/lib/data/matchHistory";
 import { getStandings } from "@/lib/data/standings";
 import { rankPlayerByWins } from "@/lib/standings";
-import { computeWins, computeWinPercentage, computeCurrentStreak } from "@/lib/stats";
+import { computeWins, computeWinPercentage, computeCurrentStreak, type MatchOutcome } from "@/lib/stats";
 import { Avatar } from "@/components/Avatar";
 import { Card } from "@/components/Card";
 import { StatCard } from "@/components/StatCard";
@@ -24,10 +24,11 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   ]);
 
   const { rank, totalPlayers } = rankPlayerByWins(standings, player.id);
-  const wins = computeWins(outcomes);
-  const losses = outcomes.length - wins;
-  const winPercentage = computeWinPercentage(outcomes);
-  const streak = computeCurrentStreak(outcomes);
+  const matchOutcomes: MatchOutcome[] = outcomes.map((o) => ({ matchId: o.matchId, playedAt: o.playedAt, won: o.won }));
+  const wins = computeWins(matchOutcomes);
+  const losses = matchOutcomes.length - wins;
+  const winPercentage = computeWinPercentage(matchOutcomes);
+  const streak = computeCurrentStreak(matchOutcomes);
 
   return (
     <main className="max-w-container-max mx-auto px-gutter py-8 space-y-8">
