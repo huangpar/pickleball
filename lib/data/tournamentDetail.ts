@@ -3,7 +3,7 @@ import { tournaments, matches, matchParticipants, players, tournamentParticipant
 import { eq, inArray } from "drizzle-orm";
 import { getPlayerMatchOutcomes } from "@/lib/data/players";
 import { computeWins, computeWinPercentage, computeTrend } from "@/lib/stats";
-import type { StandingRow } from "@/lib/standings";
+import { computePointDifferential, type StandingRow } from "@/lib/standings";
 
 export interface MatchDetail {
   id: string;
@@ -147,7 +147,7 @@ export async function getTournamentStandings(tournamentId: string): Promise<Stan
       losses: outcomes.length - wins,
       matchesPlayed: outcomes.length,
       winPercentage: computeWinPercentage(matchOutcomes),
-      pointDifferential: 0, // TODO: implement if needed for tournaments
+      pointDifferential: computePointDifferential(outcomes),
       trend: computeTrend(matchOutcomes),
     });
   }

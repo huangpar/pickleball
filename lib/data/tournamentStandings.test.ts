@@ -96,4 +96,78 @@ describe("getTournamentStandings", () => {
     const standings = await getTournamentStandings(tournament.id);
     expect(standings).toEqual([]);
   });
+
+  it("computes losses and pointDifferential scoped to tournament", async () => {
+    const [player] = await db.insert(players).values({ name: "__TStandings PD Player__" }).returning();
+    insertedPlayerIds.push(player.id);
+
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({ name: "__TStandings PD Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .returning();
+    const [otherTournament] = await db
+      .insert(tournaments)
+      .values({ name: "__TStandings PD Other__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles", status: "scheduled" })
+      .returning();
+    tournamentIds.push(tournament.id, otherTournament.id);
+
+    await db.insert(tournamentParticipants).values([
+      { tournamentId: tournament.id, playerId: player.id },
+      { tournamentId: otherTournament.id, playerId: player.id },
+    ]);
+
+    // Create matches in this tournament and another
+    const [match1] = await db
+      .insert(matches)
+      .values({
+        tournamentId: tournament.id,
+        courtNumber: 1,
+        roundNumber: 1,
+        status: "final",
+        side1Score: 10,
+        side2Score: 8,
+        playedAt: new Date(),
+      })
+      .returning();
+    const [match2] = await db
+      .insert(matches)
+      .values({
+        tournamentId: tournament.id,
+        courtNumber: 1,
+        roundNumber: 2,
+        status: "final",
+        side1Score: 7,
+        side2Score: 11,
+        playedAt: new Date(),
+      })
+      .returning();
+    const [match3] = await db
+      .insert(matches)
+      .values({
+        tournamentId: otherTournament.id,
+        courtNumber: 1,
+        roundNumber: 1,
+        status: "final",
+        side1Score: 15,
+        side2Score: 5,
+        playedAt: new Date(),
+      })
+      .returning();
+    matchIds.push(match1.id, match2.id, match3.id);
+
+    await db.insert(matchParticipants).values([
+      { matchId: match1.id, playerId: player.id, side: 1 },
+      { matchId: match2.id, playerId: player.id, side: 1 },
+      { matchId: match3.id, playerId: player.id, side: 1 },
+    ]);
+
+    const standings = await getTournamentStandings(tournament.id);
+    const row = standings.find((s) => s.id === player.id);
+
+    // Only matches 1 & 2 should be counted
+    expect(row?.wins).toBe(1);
+    expect(row?.losses).toBe(1);
+    expect(row?.matchesPlayed).toBe(2);
+    expect(row?.pointDifferential).toBe(-2); // 10-8 + 7-11 = -2 (match3 excluded)
+  });
 });
