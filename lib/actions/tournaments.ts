@@ -137,21 +137,21 @@ export async function editTournament(
   tournamentId: string,
   participantIds: string[],
   numRounds: number
-): Promise<void> {
+): Promise<{ error?: string }> {
   const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
-  if (!tournament) throw new Error("Tournament not found");
-  if (tournament.status !== "setup") throw new Error("Tournament is not in setup status");
+  if (!tournament) return { error: "Tournament not found" };
+  if (tournament.status !== "setup") return { error: "Tournament is not in setup status" };
 
   // Validate team mode before any destructive operations
   if (tournament.teamMode === "fixed" || tournament.teamMode === "hybrid") {
-    throw new Error("Cannot re-edit fixed/hybrid teams (no stored mapping)");
+    return { error: "Cannot re-edit fixed/hybrid teams (no stored mapping)" };
   }
 
-  if (participantIds.length < 2) throw new Error("Select at least 2 participants");
+  if (participantIds.length < 2) return { error: "Select at least 2 participants" };
 
   // Validate doubles participant count
   if (tournament.matchFormat === "doubles" && participantIds.length < 4) {
-    throw new Error("Doubles tournaments require at least 4 participants");
+    return { error: "Doubles tournaments require at least 4 participants" };
   }
 
   // NOTE: Transaction support requires db driver with transaction capability (e.g., postgres driver with WebSocket).
@@ -177,7 +177,7 @@ export async function editTournament(
   } else if (tournament.teamMode === "rotating") {
     schedule = generateRotatingDoublesSchedule(participantIds, tournament.numCourts, numRounds);
   } else {
-    throw new Error("Unknown team mode");
+    return { error: "Unknown team mode" };
   }
 
   for (const scheduledMatch of schedule) {
@@ -200,6 +200,7 @@ export async function editTournament(
 
   safeRevalidatePath("/tournaments");
   safeRevalidatePath(`/tournaments/${tournamentId}`);
+  return {};
 }
 
 // `revalidatePath` requires an active Next.js request-scoped store and throws

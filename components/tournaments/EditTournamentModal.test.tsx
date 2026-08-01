@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { EditTournamentModal } from "./EditTournamentModal";
+import { editTournament } from "@/lib/actions/tournaments";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/lib/actions/tournaments", () => ({ editTournament: vi.fn() }));
@@ -108,5 +109,48 @@ describe("EditTournamentModal", () => {
 
     fireEvent.click(screen.getByText("Cancel"));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("shows the returned error and keeps the modal open instead of throwing", async () => {
+    vi.mocked(editTournament).mockResolvedValueOnce({ error: "Cannot re-edit fixed/hybrid teams (no stored mapping)" });
+    const onClose = vi.fn();
+    render(
+      <EditTournamentModal
+        isOpen={true}
+        onClose={onClose}
+        tournamentId="t1"
+        currentParticipantIds={["p1", "p2"]}
+        currentRounds={4}
+        availablePlayers={mockPlayers}
+        onCreatePlayer={vi.fn()}
+        matchFormat="doubles"
+      />
+    );
+
+    fireEvent.click(screen.getByText("Save Changes"));
+
+    expect(await screen.findByText("Cannot re-edit fixed/hybrid teams (no stored mapping)")).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("closes and refreshes when editTournament succeeds", async () => {
+    vi.mocked(editTournament).mockResolvedValueOnce({});
+    const onClose = vi.fn();
+    render(
+      <EditTournamentModal
+        isOpen={true}
+        onClose={onClose}
+        tournamentId="t1"
+        currentParticipantIds={["p1", "p2"]}
+        currentRounds={4}
+        availablePlayers={mockPlayers}
+        onCreatePlayer={vi.fn()}
+        matchFormat="singles"
+      />
+    );
+
+    fireEvent.click(screen.getByText("Save Changes"));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 });

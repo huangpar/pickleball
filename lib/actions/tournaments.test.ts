@@ -135,9 +135,29 @@ describe("generateBracket", () => {
     insertedPlayerIds.push(p1.id);
     createdTournamentIds.push(tournament.id);
 
-    await expect(editTournament(tournament.id, [p1.id], 1)).rejects.toThrow(
-      "Tournament is not in setup status"
-    );
+    const result = await editTournament(tournament.id, [p1.id], 1);
+    expect(result.error).toBe("Tournament is not in setup status");
+  });
+
+  it("rejects edit for a fixed or hybrid team tournament", async () => {
+    const [p1] = await db.insert(players).values({ name: "__Edit Hybrid P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Edit Hybrid P2__" }).returning();
+    const [tournament] = await db
+      .insert(tournaments)
+      .values({
+        name: "__Edit Hybrid Tournament__",
+        numCourts: 1,
+        matchDurationMinutes: 30,
+        matchFormat: "doubles",
+        teamMode: "hybrid",
+        status: "setup",
+      })
+      .returning();
+    insertedPlayerIds.push(p1.id, p2.id);
+    createdTournamentIds.push(tournament.id);
+
+    const result = await editTournament(tournament.id, [p1.id, p2.id], 1);
+    expect(result.error).toBe("Cannot re-edit fixed/hybrid teams (no stored mapping)");
   });
 
   it("successfully updates participants for a setup tournament", async () => {
@@ -160,7 +180,8 @@ describe("generateBracket", () => {
     const [originalMatch] = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
     expect(originalMatch).toBeDefined();
 
-    await editTournament(tournamentId, [p1.id, p2.id, p3.id], 1);
+    const editResult = await editTournament(tournamentId, [p1.id, p2.id, p3.id], 1);
+    expect(editResult.error).toBeUndefined();
 
     const [updatedTournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
     const participants = await db.select().from(tournamentParticipants).where(eq(tournamentParticipants.tournamentId, tournamentId));
@@ -187,9 +208,8 @@ describe("generateBracket", () => {
     const tournamentId = await generateBracket(formData);
     createdTournamentIds.push(tournamentId);
 
-    await expect(editTournament(tournamentId, [p1.id], 1)).rejects.toThrow(
-      "Select at least 2 participants"
-    );
+    const result = await editTournament(tournamentId, [p1.id], 1);
+    expect(result.error).toBe("Select at least 2 participants");
   });
 });
 

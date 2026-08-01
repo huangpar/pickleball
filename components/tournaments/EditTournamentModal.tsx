@@ -39,7 +39,12 @@ export function EditTournamentModal({
 
     try {
       const rounds = numRounds === "" ? currentRounds : numRounds;
-      await editTournament(tournamentId, selectedIds, rounds);
+      const result = await editTournament(tournamentId, selectedIds, rounds);
+      if (result.error) {
+        setError(result.error);
+        setIsSubmitting(false);
+        return;
+      }
       router.refresh();
       onClose();
     } catch (err) {
