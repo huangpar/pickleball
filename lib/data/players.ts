@@ -15,6 +15,7 @@ export interface DateRange {
 
 export interface PlayerMatchOutcome {
   matchId: string;
+  playedAt: Date;
   side: number;
   won: boolean;
   match: {
@@ -63,6 +64,7 @@ export async function getPlayerMatchOutcomes(playerId: string, dateRange?: DateR
       const otherScore = r.side === 1 ? r.side2Score! : r.side1Score!;
       return {
         matchId: r.matchId,
+        playedAt: r.playedAt!,
         side: r.side,
         won: ownScore > otherScore,
         match: {
