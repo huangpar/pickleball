@@ -149,6 +149,14 @@ export async function editTournament(
 
   if (participantIds.length < 2) throw new Error("Select at least 2 participants");
 
+  // Validate doubles participant count
+  if (tournament.matchFormat === "doubles" && participantIds.length < 4) {
+    throw new Error("Doubles tournaments require at least 4 participants");
+  }
+
+  // NOTE: Transaction support requires db driver with transaction capability (e.g., postgres driver with WebSocket).
+  // Current neon-http driver does not support transactions. When switching to WebSocket driver,
+  // wrap this block: await db.transaction(async (tx) => { ... replace db. with tx. ... })
   const matchRows = await db.select({ id: matches.id }).from(matches).where(eq(matches.tournamentId, tournamentId));
   const matchIds = matchRows.map((m) => m.id);
   if (matchIds.length > 0) {
