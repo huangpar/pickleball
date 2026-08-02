@@ -5,29 +5,29 @@ import { matches, tournaments } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-export async function recordScore(matchId: string, formData: FormData): Promise<void> {
+export async function recordScore(matchId: string, formData: FormData): Promise<{ error?: string }> {
   const [match] = await db.select().from(matches).where(eq(matches.id, matchId));
-  if (!match) throw new Error("Match not found");
+  if (!match) return { error: "Match not found" };
 
   const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, match.tournamentId));
   if (tournament?.status === "completed") {
-    throw new Error("This tournament has ended — scores can no longer be edited");
+    return { error: "This tournament has ended — scores can no longer be edited" };
   }
   if (tournament?.status !== "in_progress") {
-    throw new Error("Start the tournament before logging scores");
+    return { error: "Start the tournament before logging scores" };
   }
 
   const side1Score = Number(formData.get("side1Score"));
   const side2Score = Number(formData.get("side2Score"));
 
   if (!Number.isInteger(side1Score) || side1Score < 0) {
-    throw new Error("Side 1 score must be a non-negative whole number");
+    return { error: "Side 1 score must be a non-negative whole number" };
   }
   if (!Number.isInteger(side2Score) || side2Score < 0) {
-    throw new Error("Side 2 score must be a non-negative whole number");
+    return { error: "Side 2 score must be a non-negative whole number" };
   }
   if (side1Score === side2Score) {
-    throw new Error("Scores cannot be tied");
+    return { error: "Scores cannot be tied" };
   }
 
   await db
@@ -47,18 +47,20 @@ export async function recordScore(matchId: string, formData: FormData): Promise<
   safeRevalidatePath(`/tournaments/${match.tournamentId}`);
   safeRevalidatePath("/tournaments");
   safeRevalidatePath("/");
+  return {};
 }
 
-export async function endTournament(tournamentId: string): Promise<void> {
+export async function endTournament(tournamentId: string): Promise<{ error?: string }> {
   const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
-  if (!tournament) throw new Error("Tournament not found");
-  if (tournament.status === "completed") return;
+  if (!tournament) return { error: "Tournament not found" };
+  if (tournament.status === "completed") return {};
 
   await db.update(tournaments).set({ status: "completed" }).where(eq(tournaments.id, tournamentId));
 
   safeRevalidatePath(`/tournaments/${tournamentId}`);
   safeRevalidatePath("/tournaments");
   safeRevalidatePath("/");
+  return {};
 }
 
 // `revalidatePath` requires an active Next.js request-scoped store and throws

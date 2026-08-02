@@ -6,10 +6,10 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import type { PlayerRow } from "@/lib/data/players";
 
-export async function createPlayer(formData: FormData): Promise<PlayerRow> {
+export async function createPlayer(formData: FormData): Promise<{ player: PlayerRow } | { error: string }> {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) {
-    throw new Error("Name is required");
+    return { error: "Name is required" };
   }
   const [inserted] = await db
     .insert(players)
@@ -18,17 +18,18 @@ export async function createPlayer(formData: FormData): Promise<PlayerRow> {
   revalidatePath("/players");
   revalidatePath("/tournaments/new");
   revalidatePath("/standings");
-  return inserted;
+  return { player: inserted };
 }
 
-export async function updatePlayer(id: string, formData: FormData): Promise<void> {
+export async function updatePlayer(id: string, formData: FormData): Promise<{ error?: string }> {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) {
-    throw new Error("Name is required");
+    return { error: "Name is required" };
   }
   await db.update(players).set({ name }).where(eq(players.id, id));
   revalidatePath("/players");
   revalidatePath(`/players/${id}`);
   revalidatePath("/tournaments/new");
   revalidatePath("/standings");
+  return {};
 }

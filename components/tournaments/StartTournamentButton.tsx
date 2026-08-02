@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/Button";
 
-export function StartTournamentButton({ onStart }: { onStart: () => Promise<void> }) {
+export function StartTournamentButton({ onStart }: { onStart: () => Promise<{ error?: string }> }) {
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -11,7 +11,11 @@ export function StartTournamentButton({ onStart }: { onStart: () => Promise<void
     setError(null);
     setIsStarting(true);
     try {
-      await onStart();
+      const result = await onStart();
+      if (result?.error) {
+        setError(result.error);
+        setIsStarting(false);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setIsStarting(false);

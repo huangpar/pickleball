@@ -18,7 +18,7 @@ export function MatchScoreForm({
   side2Score: number | null;
   firstServerName: string | null;
   disabled: boolean;
-  onSubmit: (formData: FormData) => Promise<void>;
+  onSubmit: (formData: FormData) => Promise<{ error?: string }>;
 }) {
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +27,10 @@ export function MatchScoreForm({
     setError(null);
     const formData = new FormData(event.currentTarget);
     try {
-      await onSubmit(formData);
+      const result = await onSubmit(formData);
+      if (result?.error) {
+        setError(result.error);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     }

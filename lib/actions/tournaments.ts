@@ -10,7 +10,7 @@ import { generateRotatingDoublesSchedule } from "@/lib/scheduling/rotatingDouble
 import { generateHybridDoublesSchedule } from "@/lib/scheduling/hybridDoubles";
 import type { ScheduledMatch } from "@/lib/scheduling/types";
 
-export async function generateBracket(formData: FormData): Promise<string> {
+export async function generateBracket(formData: FormData): Promise<{ tournamentId: string } | { error: string }> {
   const name = String(formData.get("name") ?? "").trim();
   const numCourts = Number(formData.get("numCourts"));
   const matchDurationMinutes = Number(formData.get("matchDurationMinutes"));
@@ -18,13 +18,13 @@ export async function generateBracket(formData: FormData): Promise<string> {
   const participantIds = formData.getAll("participantIds").map(String);
   const uniqueParticipantIds = [...new Set(participantIds)];
 
-  if (!name) throw new Error("Tournament name is required");
-  if (!Number.isInteger(numCourts) || numCourts < 1) throw new Error("Number of courts must be at least 1");
+  if (!name) return { error: "Tournament name is required" };
+  if (!Number.isInteger(numCourts) || numCourts < 1) return { error: "Number of courts must be at least 1" };
   if (!Number.isInteger(matchDurationMinutes) || matchDurationMinutes < 1) {
-    throw new Error("Match duration must be at least 1 minute");
+    return { error: "Match duration must be at least 1 minute" };
   }
-  if (matchFormat !== "singles" && matchFormat !== "doubles") throw new Error("Invalid match format");
-  if (uniqueParticipantIds.length < 2) throw new Error("Select at least 2 participants");
+  if (matchFormat !== "singles" && matchFormat !== "doubles") return { error: "Invalid match format" };
+  if (uniqueParticipantIds.length < 2) return { error: "Select at least 2 participants" };
 
   let schedule: ScheduledMatch[];
   let teamMode: "fixed" | "rotating" | "hybrid" | null = null;
@@ -35,12 +35,12 @@ export async function generateBracket(formData: FormData): Promise<string> {
   } else {
     teamMode = String(formData.get("teamMode")) as "fixed" | "rotating" | "hybrid";
     if (teamMode !== "fixed" && teamMode !== "rotating" && teamMode !== "hybrid") {
-      throw new Error("Invalid team mode");
+      return { error: "Invalid team mode" };
     }
 
     if (teamMode === "fixed") {
       const teamStrings = formData.getAll("fixedTeams").map(String);
-      if (teamStrings.length === 0) throw new Error("At least one team is required");
+      if (teamStrings.length === 0) return { error: "At least one team is required" };
       const teams: [string, string][] = teamStrings.map((t) => {
         const [a, b] = t.split(",");
         return [a, b];
@@ -48,11 +48,11 @@ export async function generateBracket(formData: FormData): Promise<string> {
       schedule = generateFixedDoublesSchedule(teams, numCourts);
     } else if (teamMode === "rotating") {
       numRounds = Number(formData.get("numRounds"));
-      if (!Number.isInteger(numRounds) || numRounds < 1) throw new Error("Number of rounds must be at least 1");
+      if (!Number.isInteger(numRounds) || numRounds < 1) return { error: "Number of rounds must be at least 1" };
       schedule = generateRotatingDoublesSchedule(uniqueParticipantIds, numCourts, numRounds);
     } else {
       numRounds = Number(formData.get("numRounds"));
-      if (!Number.isInteger(numRounds) || numRounds < 1) throw new Error("Number of rounds must be at least 1");
+      if (!Number.isInteger(numRounds) || numRounds < 1) return { error: "Number of rounds must be at least 1" };
       const pairStrings = formData.getAll("fixedPairs").map(String);
       const fixedPairs: [string, string][] = pairStrings.map((t) => {
         const [a, b] = t.split(",");
@@ -64,7 +64,7 @@ export async function generateBracket(formData: FormData): Promise<string> {
     }
   }
 
-  if (schedule.length === 0) throw new Error("Not enough participants to generate a schedule");
+  if (schedule.length === 0) return { error: "Not enough participants to generate a schedule" };
 
   const [tournament] = await db
     .insert(tournaments)
@@ -96,14 +96,14 @@ export async function generateBracket(formData: FormData): Promise<string> {
   safeRevalidatePath("/tournaments");
   safeRevalidatePath("/");
 
-  return tournament.id;
+  return { tournamentId: tournament.id };
 }
 
-export async function startTournament(tournamentId: string): Promise<void> {
+export async function startTournament(tournamentId: string): Promise<{ error?: string }> {
   const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
-  if (!tournament) throw new Error("Tournament not found");
+  if (!tournament) return { error: "Tournament not found" };
   if (tournament.status !== "setup") {
-    throw new Error("Tournament has already been started");
+    return { error: "Tournament has already been started" };
   }
 
   await db
@@ -114,11 +114,12 @@ export async function startTournament(tournamentId: string): Promise<void> {
   safeRevalidatePath(`/tournaments/${tournamentId}`);
   safeRevalidatePath("/tournaments");
   safeRevalidatePath("/");
+  return {};
 }
 
-export async function deleteTournament(tournamentId: string): Promise<void> {
+export async function deleteTournament(tournamentId: string): Promise<{ error?: string }> {
   const [tournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
-  if (!tournament) throw new Error("Tournament not found");
+  if (!tournament) return { error: "Tournament not found" };
 
   const matchRows = await db.select({ id: matches.id }).from(matches).where(eq(matches.tournamentId, tournamentId));
   const matchIds = matchRows.map((m) => m.id);
@@ -131,6 +132,7 @@ export async function deleteTournament(tournamentId: string): Promise<void> {
 
   safeRevalidatePath("/tournaments");
   safeRevalidatePath("/");
+  return {};
 }
 
 export async function editTournament(

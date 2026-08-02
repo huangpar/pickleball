@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { RoundRobinSetupForm } from "./RoundRobinSetupForm";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const pushMock = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock }) }));
 
 const initialPlayers = [
   { id: "p1", name: "Alex Sterling" },
@@ -98,5 +99,26 @@ describe("RoundRobinSetupForm", () => {
 
     // 1 fixed pair + 2 rotating players (1 rotating pair) = 2 teams/round -> 1 match/round * 3 rounds = 3
     expect(screen.getByText(/3 matches/i)).toBeInTheDocument();
+  });
+
+  it("shows the returned error and does not navigate when onSubmit resolves with an error", async () => {
+    pushMock.mockClear();
+    const onSubmit = vi.fn().mockResolvedValue({ error: "Select at least 2 participants" });
+    render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={onSubmit} onCreatePlayer={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /generate bracket/i }));
+
+    expect(await screen.findByText("Select at least 2 participants")).toBeInTheDocument();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("navigates to the new tournament when onSubmit succeeds", async () => {
+    pushMock.mockClear();
+    const onSubmit = vi.fn().mockResolvedValue({ tournamentId: "t1" });
+    render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={onSubmit} onCreatePlayer={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /generate bracket/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/tournaments/t1"));
   });
 });

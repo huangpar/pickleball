@@ -4,7 +4,7 @@ import { MatchScoreForm } from "./MatchScoreForm";
 
 describe("MatchScoreForm", () => {
   it("renders each side's names and score input on its own row, and submits edited values", async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const onSubmit = vi.fn().mockResolvedValue({});
     render(
       <MatchScoreForm
         side1PlayerNames={["Alex Sterling"]}
@@ -31,6 +31,27 @@ describe("MatchScoreForm", () => {
 
   it("shows an error message if onSubmit rejects", async () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error("Scores cannot be tied"));
+    render(
+      <MatchScoreForm
+        side1PlayerNames={["Alex Sterling"]}
+        side2PlayerNames={["Ben Rivera"]}
+        side1Score={null}
+        side2Score={null}
+        firstServerName={null}
+        disabled={false}
+        onSubmit={onSubmit}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Side 1 score"), { target: { value: "5" } });
+    fireEvent.change(screen.getByLabelText("Side 2 score"), { target: { value: "5" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Scores cannot be tied")).toBeInTheDocument();
+  });
+
+  it("shows an error message if onSubmit resolves with an error instead of throwing", async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ error: "Scores cannot be tied" });
     render(
       <MatchScoreForm
         side1PlayerNames={["Alex Sterling"]}

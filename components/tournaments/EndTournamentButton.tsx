@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/Button";
 
-export function EndTournamentButton({ onEnd }: { onEnd: () => Promise<void> }) {
+export function EndTournamentButton({ onEnd }: { onEnd: () => Promise<{ error?: string }> }) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12,7 +12,12 @@ export function EndTournamentButton({ onEnd }: { onEnd: () => Promise<void> }) {
     setError(null);
     setIsEnding(true);
     try {
-      await onEnd();
+      const result = await onEnd();
+      if (result?.error) {
+        setError(result.error);
+        setIsEnding(false);
+        setIsConfirming(false);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setIsEnding(false);

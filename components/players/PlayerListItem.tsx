@@ -12,7 +12,7 @@ export function PlayerListItem({
   onUpdate,
 }: {
   player: PlayerRow;
-  onUpdate: (formData: FormData) => Promise<void>;
+  onUpdate: (formData: FormData) => Promise<{ error?: string }>;
 }) {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -22,7 +22,10 @@ export function PlayerListItem({
         <EditPlayerForm
           player={player}
           onSubmit={async (formData) => {
-            await onUpdate(formData);
+            const result = await onUpdate(formData);
+            if (result.error) {
+              throw new Error(result.error);
+            }
             setIsEditing(false);
           }}
           onCancel={() => setIsEditing(false)}

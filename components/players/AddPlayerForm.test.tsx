@@ -4,7 +4,7 @@ import { AddPlayerForm } from "./AddPlayerForm";
 
 describe("AddPlayerForm", () => {
   it("calls onSubmit with the entered name, then clears the form", async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const onSubmit = vi.fn().mockResolvedValue({ player: { id: "p1", name: "Alex Sterling" } });
     render(<AddPlayerForm onSubmit={onSubmit} />);
 
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Alex Sterling" } });
@@ -18,6 +18,15 @@ describe("AddPlayerForm", () => {
 
   it("shows an error message if onSubmit rejects", async () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error("Name is required"));
+    render(<AddPlayerForm onSubmit={onSubmit} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Player" }));
+
+    expect(await screen.findByText("Name is required")).toBeInTheDocument();
+  });
+
+  it("shows an error message if onSubmit resolves with an error instead of throwing", async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ error: "Name is required" });
     render(<AddPlayerForm onSubmit={onSubmit} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Add Player" }));

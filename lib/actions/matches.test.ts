@@ -83,7 +83,8 @@ describe("recordScore", () => {
     const formData = new FormData();
     formData.set("side1Score", "5");
     formData.set("side2Score", "5");
-    await expect(recordScore(match.id, formData)).rejects.toThrow("Scores cannot be tied");
+    const result = await recordScore(match.id, formData);
+    expect(result.error).toBe("Scores cannot be tied");
   });
 
   it("rejects recording a score before the tournament has been started", async () => {
@@ -101,7 +102,8 @@ describe("recordScore", () => {
     const formData = new FormData();
     formData.set("side1Score", "11");
     formData.set("side2Score", "7");
-    await expect(recordScore(match.id, formData)).rejects.toThrow("Start the tournament before logging scores");
+    const result = await recordScore(match.id, formData);
+    expect(result.error).toBe("Start the tournament before logging scores");
 
     const [unchangedMatch] = await db.select().from(matches).where(eq(matches.id, match.id));
     expect(unchangedMatch.status).toBe("scheduled");
@@ -123,9 +125,8 @@ describe("recordScore", () => {
     const formData = new FormData();
     formData.set("side1Score", "11");
     formData.set("side2Score", "7");
-    await expect(recordScore(match.id, formData)).rejects.toThrow(
-      "This tournament has ended — scores can no longer be edited"
-    );
+    const result = await recordScore(match.id, formData);
+    expect(result.error).toBe("This tournament has ended — scores can no longer be edited");
 
     const [unchangedMatch] = await db.select().from(matches).where(eq(matches.id, match.id));
     expect(unchangedMatch.status).toBe("scheduled");
@@ -170,13 +171,15 @@ describe("endTournament", () => {
       .returning();
     tournamentIds.push(tournament.id);
 
-    await expect(endTournament(tournament.id)).resolves.toBeUndefined();
+    const result = await endTournament(tournament.id);
+    expect(result.error).toBeUndefined();
 
     const [updated] = await db.select().from(tournaments).where(eq(tournaments.id, tournament.id));
     expect(updated.status).toBe("completed");
   });
 
-  it("throws for a nonexistent tournament", async () => {
-    await expect(endTournament("00000000-0000-0000-0000-000000000000")).rejects.toThrow("Tournament not found");
+  it("returns an error for a nonexistent tournament", async () => {
+    const result = await endTournament("00000000-0000-0000-0000-000000000000");
+    expect(result.error).toBe("Tournament not found");
   });
 });

@@ -4,7 +4,7 @@ import { EndTournamentButton } from "./EndTournamentButton";
 
 describe("EndTournamentButton", () => {
   it("calls onEnd when the user confirms", async () => {
-    const onEnd = vi.fn().mockResolvedValue(undefined);
+    const onEnd = vi.fn().mockResolvedValue({});
     render(<EndTournamentButton onEnd={onEnd} />);
 
     fireEvent.click(screen.getByRole("button", { name: "End Tournament" }));
@@ -26,6 +26,16 @@ describe("EndTournamentButton", () => {
 
   it("shows an error message if onEnd rejects", async () => {
     const onEnd = vi.fn().mockRejectedValue(new Error("Tournament not found"));
+    render(<EndTournamentButton onEnd={onEnd} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "End Tournament" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(await screen.findByText("Tournament not found")).toBeInTheDocument();
+  });
+
+  it("shows an error message if onEnd resolves with an error instead of throwing", async () => {
+    const onEnd = vi.fn().mockResolvedValue({ error: "Tournament not found" });
     render(<EndTournamentButton onEnd={onEnd} />);
 
     fireEvent.click(screen.getByRole("button", { name: "End Tournament" }));

@@ -4,6 +4,12 @@ import { players, tournaments, tournamentParticipants, matches, matchParticipant
 import { eq } from "drizzle-orm";
 import { generateBracket, startTournament, deleteTournament, editTournament } from "./tournaments";
 
+async function generateBracketId(formData: FormData): Promise<string> {
+  const result = await generateBracket(formData);
+  if ("error" in result) throw new Error(result.error);
+  return result.tournamentId;
+}
+
 describe("generateBracket", () => {
   const insertedPlayerIds: string[] = [];
   const createdTournamentIds: string[] = [];
@@ -41,7 +47,7 @@ describe("generateBracket", () => {
     formData.set("matchFormat", "singles");
     ids.forEach((id) => formData.append("participantIds", id));
 
-    const tournamentId = await generateBracket(formData);
+    const tournamentId = await generateBracketId(formData);
     createdTournamentIds.push(tournamentId);
 
     const [tournamentRow] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
@@ -71,7 +77,7 @@ describe("generateBracket", () => {
     formData.append("fixedTeams", `${ids[0]},${ids[1]}`);
     formData.append("fixedTeams", `${ids[2]},${ids[3]}`);
 
-    const tournamentId = await generateBracket(formData);
+    const tournamentId = await generateBracketId(formData);
     createdTournamentIds.push(tournamentId);
 
     const matchRows = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
@@ -97,7 +103,7 @@ describe("generateBracket", () => {
     ids.forEach((id) => formData.append("participantIds", id));
     formData.append("fixedPairs", `${ids[0]},${ids[1]}`);
 
-    const tournamentId = await generateBracket(formData);
+    const tournamentId = await generateBracketId(formData);
     createdTournamentIds.push(tournamentId);
 
     const [tournamentRow] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
@@ -117,7 +123,8 @@ describe("generateBracket", () => {
     formData.set("matchFormat", "singles");
     formData.append("participantIds", "only-one-id");
 
-    await expect(generateBracket(formData)).rejects.toThrow("Select at least 2 participants");
+    const result = await generateBracket(formData);
+    expect("error" in result && result.error).toBe("Select at least 2 participants");
   });
 
   it("rejects edit if tournament is not in setup status", async () => {
@@ -174,7 +181,7 @@ describe("generateBracket", () => {
     formData.append("participantIds", p1.id);
     formData.append("participantIds", p2.id);
 
-    const tournamentId = await generateBracket(formData);
+    const tournamentId = await generateBracketId(formData);
     createdTournamentIds.push(tournamentId);
 
     const [originalMatch] = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
@@ -205,7 +212,7 @@ describe("generateBracket", () => {
     formData.append("participantIds", p1.id);
     formData.append("participantIds", p2.id);
 
-    const tournamentId = await generateBracket(formData);
+    const tournamentId = await generateBracketId(formData);
     createdTournamentIds.push(tournamentId);
 
     const result = await editTournament(tournamentId, [p1.id], 1);
@@ -245,11 +252,13 @@ describe("startTournament", () => {
       .returning();
     tournamentIds.push(tournament.id);
 
-    await expect(startTournament(tournament.id)).rejects.toThrow("Tournament has already been started");
+    const result = await startTournament(tournament.id);
+    expect(result.error).toBe("Tournament has already been started");
   });
 
-  it("throws for a nonexistent tournament", async () => {
-    await expect(startTournament("00000000-0000-0000-0000-000000000000")).rejects.toThrow("Tournament not found");
+  it("returns an error for a nonexistent tournament", async () => {
+    const result = await startTournament("00000000-0000-0000-0000-000000000000");
+    expect(result.error).toBe("Tournament not found");
   });
 });
 
@@ -303,7 +312,8 @@ describe("deleteTournament", () => {
     expect(remainingMatchParticipants).toHaveLength(0);
   });
 
-  it("throws for a nonexistent tournament", async () => {
-    await expect(deleteTournament("00000000-0000-0000-0000-000000000000")).rejects.toThrow("Tournament not found");
+  it("returns an error for a nonexistent tournament", async () => {
+    const result = await deleteTournament("00000000-0000-0000-0000-000000000000");
+    expect(result.error).toBe("Tournament not found");
   });
 });

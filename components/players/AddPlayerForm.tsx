@@ -12,7 +12,11 @@ export function AddPlayerForm({ onSubmit }: { onSubmit: (formData: FormData) => 
     setError(null);
     const formData = new FormData(event.currentTarget);
     try {
-      await onSubmit(formData);
+      const result = await onSubmit(formData);
+      if (result && typeof result === "object" && "error" in result && typeof result.error === "string") {
+        setError(result.error);
+        return;
+      }
       formRef.current?.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

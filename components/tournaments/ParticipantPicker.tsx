@@ -16,7 +16,7 @@ export function ParticipantPicker({
   selectedIds: string[];
   onToggle: (id: string) => void;
   onPlayerAdded: (player: PlayerRow) => void;
-  onCreatePlayer: (formData: FormData) => Promise<PlayerRow>;
+  onCreatePlayer: (formData: FormData) => Promise<{ player: PlayerRow } | { error: string }>;
   pairLocking?: {
     lockedPairs: [string, string][];
     armedId: string | null;
@@ -29,9 +29,12 @@ export function ParticipantPicker({
     .sort((a, b) => a.name.localeCompare(b.name));
 
   async function handleCreate(formData: FormData) {
-    const player = await onCreatePlayer(formData);
-    onPlayerAdded(player);
-    onToggle(player.id);
+    const result = await onCreatePlayer(formData);
+    if ("error" in result) {
+      throw new Error(result.error);
+    }
+    onPlayerAdded(result.player);
+    onToggle(result.player.id);
   }
 
   function handleRowClick(id: string, isSelected: boolean) {

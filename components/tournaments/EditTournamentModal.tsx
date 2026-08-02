@@ -24,7 +24,7 @@ export function EditTournamentModal({
   currentParticipantIds: string[];
   currentRounds: number;
   availablePlayers: PlayerRow[];
-  onCreatePlayer: (formData: FormData) => Promise<PlayerRow>;
+  onCreatePlayer: (formData: FormData) => Promise<{ player: PlayerRow } | { error: string }>;
   matchFormat: "singles" | "doubles";
 }) {
   const router = useRouter();

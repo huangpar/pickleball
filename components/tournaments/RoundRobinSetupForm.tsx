@@ -22,8 +22,8 @@ export function RoundRobinSetupForm({
   onCreatePlayer,
 }: {
   initialPlayers: PlayerRow[];
-  onSubmit: (formData: FormData) => Promise<string>;
-  onCreatePlayer: (formData: FormData) => Promise<PlayerRow>;
+  onSubmit: (formData: FormData) => Promise<{ tournamentId: string } | { error: string }>;
+  onCreatePlayer: (formData: FormData) => Promise<{ player: PlayerRow } | { error: string }>;
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -125,8 +125,13 @@ export function RoundRobinSetupForm({
         }
       }
 
-      const tournamentId = await onSubmit(formData);
-      router.push(`/tournaments/${tournamentId}`);
+      const result = await onSubmit(formData);
+      if ("error" in result) {
+        setError(result.error);
+        setIsSubmitting(false);
+        return;
+      }
+      router.push(`/tournaments/${result.tournamentId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setIsSubmitting(false);

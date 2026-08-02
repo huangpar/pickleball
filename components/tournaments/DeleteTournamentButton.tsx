@@ -10,7 +10,7 @@ export function DeleteTournamentButton({
   redirectTo,
 }: {
   tournamentName: string;
-  onDelete: () => Promise<void>;
+  onDelete: () => Promise<{ error?: string }>;
   redirectTo?: string;
 }) {
   const router = useRouter();
@@ -37,7 +37,13 @@ export function DeleteTournamentButton({
     setError(null);
     setIsDeleting(true);
     try {
-      await onDelete();
+      const result = await onDelete();
+      if (result?.error) {
+        setError(result.error);
+        setIsDeleting(false);
+        setIsConfirming(false);
+        return;
+      }
       if (redirectTo) router.push(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
