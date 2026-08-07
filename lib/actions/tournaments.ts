@@ -144,8 +144,18 @@ export async function editTournament(
   if (!tournament) return { error: "Tournament not found" };
   if (tournament.status !== "setup") return { error: "Tournament is not in setup status" };
 
-  // Validate team mode before any destructive operations
-  if (tournament.teamMode === "fixed" || tournament.teamMode === "hybrid") {
+  // Get current participants to check if they changed
+  const currentParticipants = await db
+    .select({ playerId: tournamentParticipants.playerId })
+    .from(tournamentParticipants)
+    .where(eq(tournamentParticipants.tournamentId, tournamentId));
+
+  const currentParticipantIds = currentParticipants.map((p) => p.playerId).sort();
+  const newParticipantIds = [...participantIds].sort();
+  const participantsChanged = JSON.stringify(currentParticipantIds) !== JSON.stringify(newParticipantIds);
+
+  // Allow rounds-only changes for fixed/hybrid, but reject participant changes
+  if ((tournament.teamMode === "fixed" || tournament.teamMode === "hybrid") && participantsChanged) {
     return { error: "Cannot re-edit fixed/hybrid teams (no stored mapping)" };
   }
 
