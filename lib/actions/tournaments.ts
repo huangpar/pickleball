@@ -154,9 +154,9 @@ export async function editTournament(
   const newParticipantIds = [...participantIds].sort();
   const participantsChanged = JSON.stringify(currentParticipantIds) !== JSON.stringify(newParticipantIds);
 
-  // Allow rounds-only changes for fixed/hybrid, but reject participant changes
-  if ((tournament.teamMode === "fixed" || tournament.teamMode === "hybrid") && participantsChanged) {
-    return { error: "Cannot re-edit fixed/hybrid teams (no stored mapping)" };
+  // Hybrid tournaments cannot be re-edited (no stored fixed pair mapping)
+  if (tournament.teamMode === "hybrid" && participantsChanged) {
+    return { error: "Cannot re-edit hybrid teams (no stored pair mapping)" };
   }
 
   if (participantIds.length < 2) return { error: "Select at least 2 participants" };
@@ -193,6 +193,15 @@ export async function editTournament(
   let schedule: ScheduledMatch[];
   if (tournament.matchFormat === "singles") {
     schedule = generateSinglesSchedule(participantIds, tournament.numCourts);
+  } else if (tournament.teamMode === "fixed") {
+    // Pair participants in order: [0,1], [2,3], [4,5], etc.
+    const teams: [string, string][] = [];
+    for (let i = 0; i < participantIds.length; i += 2) {
+      if (i + 1 < participantIds.length) {
+        teams.push([participantIds[i], participantIds[i + 1]]);
+      }
+    }
+    schedule = generateFixedDoublesSchedule(teams, tournament.numCourts);
   } else if (tournament.teamMode === "rotating") {
     schedule = generateRotatingDoublesSchedule(participantIds, tournament.numCourts, numRounds);
   } else {
