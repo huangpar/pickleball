@@ -4,6 +4,8 @@ import { AddPlayerForm } from "@/components/players/AddPlayerForm";
 import { PlayerListItem } from "@/components/players/PlayerListItem";
 import { Card } from "@/components/Card";
 
+export const revalidate = 0;
+
 export default async function PlayersPage() {
   const allPlayers = await getAllPlayers();
 
