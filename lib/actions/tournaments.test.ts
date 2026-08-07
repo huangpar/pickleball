@@ -73,6 +73,7 @@ describe("generateBracket", () => {
     formData.set("matchDurationMinutes", "30");
     formData.set("matchFormat", "doubles");
     formData.set("teamMode", "fixed");
+    formData.set("numRounds", "1");
     ids.forEach((id) => formData.append("participantIds", id));
     formData.append("fixedTeams", `${ids[0]},${ids[1]}`);
     formData.append("fixedTeams", `${ids[2]},${ids[3]}`);
@@ -164,7 +165,7 @@ describe("generateBracket", () => {
     createdTournamentIds.push(tournament.id);
 
     const result = await editTournament(tournament.id, [p1.id, p2.id], 1);
-    expect(result.error).toBe("Cannot re-edit fixed/hybrid teams (no stored mapping)");
+    expect(result.error).toBe("Cannot re-edit hybrid teams (no stored pair mapping)");
   });
 
   it("successfully updates participants for a setup tournament", async () => {

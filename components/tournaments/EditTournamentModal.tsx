@@ -45,6 +45,7 @@ export function EditTournamentModal({
         setIsSubmitting(false);
         return;
       }
+      setIsSubmitting(false);
       router.refresh();
       onClose();
     } catch (err) {

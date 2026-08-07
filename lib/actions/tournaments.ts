@@ -39,6 +39,8 @@ export async function generateBracket(formData: FormData): Promise<{ tournamentI
     }
 
     if (teamMode === "fixed") {
+      numRounds = Number(formData.get("numRounds"));
+      if (!Number.isInteger(numRounds) || numRounds < 1) return { error: "Number of rounds must be at least 1" };
       const teamStrings = formData.getAll("fixedTeams").map(String);
       if (teamStrings.length === 0) return { error: "At least one team is required" };
       const teams: [string, string][] = teamStrings.map((t) => {
@@ -166,6 +168,16 @@ export async function editTournament(
     return { error: "Doubles tournaments require at least 4 participants" };
   }
 
+  // For fixed/hybrid tournaments with only rounds changed, just update rounds without regenerating
+  if (!participantsChanged && (tournament.teamMode === "fixed" || tournament.teamMode === "hybrid")) {
+    if (numRounds !== tournament.numRounds) {
+      await db.update(tournaments).set({ numRounds }).where(eq(tournaments.id, tournamentId));
+    }
+    safeRevalidatePath("/tournaments");
+    safeRevalidatePath(`/tournaments/${tournamentId}`);
+    return {};
+  }
+
   // NOTE: Transaction support requires db driver with transaction capability (e.g., postgres driver with WebSocket).
   // Current neon-http driver does not support transactions. When switching to WebSocket driver,
   // wrap this block: await db.transaction(async (tx) => { ... replace db. with tx. ... })
@@ -181,13 +193,6 @@ export async function editTournament(
 
   if (numRounds !== tournament.numRounds) {
     await db.update(tournaments).set({ numRounds }).where(eq(tournaments.id, tournamentId));
-  }
-
-  // For fixed/hybrid tournaments with only rounds changed, skip match regeneration
-  if (!participantsChanged && (tournament.teamMode === "fixed" || tournament.teamMode === "hybrid")) {
-    safeRevalidatePath("/tournaments");
-    safeRevalidatePath(`/tournaments/${tournamentId}`);
-    return {};
   }
 
   let schedule: ScheduledMatch[];

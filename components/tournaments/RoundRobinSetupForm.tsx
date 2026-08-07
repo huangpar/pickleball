@@ -121,6 +121,7 @@ export function RoundRobinSetupForm({
           formData.set("numRounds", String(numRounds));
           lockedPairs.forEach((pair) => formData.append("fixedPairs", pair.join(",")));
         } else {
+          formData.set("numRounds", String(numRounds));
           fixedTeams.forEach((team) => formData.append("fixedTeams", team.join(",")));
         }
       }
