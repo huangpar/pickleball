@@ -235,7 +235,7 @@ export function RoundRobinSetupForm({
           </>
         )}
 
-        {matchFormat === "doubles" && (teamMode === "rotating" || teamMode === "hybrid") && (
+        {matchFormat === "doubles" && (teamMode === "rotating" || teamMode === "hybrid" || teamMode === "fixed") && (
           <label className="flex flex-col text-sm gap-1">
             Number of Rounds
             <input
