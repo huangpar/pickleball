@@ -183,6 +183,13 @@ export async function editTournament(
     await db.update(tournaments).set({ numRounds }).where(eq(tournaments.id, tournamentId));
   }
 
+  // For fixed/hybrid tournaments with only rounds changed, skip match regeneration
+  if (!participantsChanged && (tournament.teamMode === "fixed" || tournament.teamMode === "hybrid")) {
+    safeRevalidatePath("/tournaments");
+    safeRevalidatePath(`/tournaments/${tournamentId}`);
+    return {};
+  }
+
   let schedule: ScheduledMatch[];
   if (tournament.matchFormat === "singles") {
     schedule = generateSinglesSchedule(participantIds, tournament.numCourts);
