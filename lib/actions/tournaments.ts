@@ -45,7 +45,7 @@ export async function generateBracket(formData: FormData): Promise<{ tournamentI
         const [a, b] = t.split(",");
         return [a, b];
       });
-      schedule = generateFixedDoublesSchedule(teams, numCourts);
+      schedule = generateFixedDoublesSchedule(teams, numCourts, numRounds);
     } else if (teamMode === "rotating") {
       numRounds = Number(formData.get("numRounds"));
       if (!Number.isInteger(numRounds) || numRounds < 1) return { error: "Number of rounds must be at least 1" };
@@ -201,7 +201,7 @@ export async function editTournament(
         teams.push([participantIds[i], participantIds[i + 1]]);
       }
     }
-    schedule = generateFixedDoublesSchedule(teams, tournament.numCourts);
+    schedule = generateFixedDoublesSchedule(teams, tournament.numCourts, numRounds);
   } else if (tournament.teamMode === "rotating") {
     schedule = generateRotatingDoublesSchedule(participantIds, tournament.numCourts, numRounds);
   } else {

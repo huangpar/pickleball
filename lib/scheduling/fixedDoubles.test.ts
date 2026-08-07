@@ -41,7 +41,7 @@ describe("generateFixedDoublesSchedule", () => {
       ["p5", "p6"],
       ["p7", "p8"],
     ];
-    const schedule = generateFixedDoublesSchedule(teams, 2, mulberry32(7));
+    const schedule = generateFixedDoublesSchedule(teams, 2, undefined, mulberry32(7));
     schedule.forEach((m) => {
       const participants = [...m.side1PlayerIds, ...m.side2PlayerIds];
       expect(participants).toContain(m.firstServerId);
