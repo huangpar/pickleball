@@ -168,11 +168,53 @@ export async function editTournament(
     return { error: "Doubles tournaments require at least 4 participants" };
   }
 
-  // For fixed/hybrid tournaments with only rounds changed, just update rounds without regenerating
-  if (!participantsChanged && (tournament.teamMode === "fixed" || tournament.teamMode === "hybrid")) {
+  // For hybrid tournaments with only rounds changed, just update numRounds (can't regenerate without pair mapping)
+  if (!participantsChanged && tournament.teamMode === "hybrid") {
     if (numRounds !== tournament.numRounds) {
       await db.update(tournaments).set({ numRounds }).where(eq(tournaments.id, tournamentId));
     }
+    safeRevalidatePath("/tournaments");
+    safeRevalidatePath(`/tournaments/${tournamentId}`);
+    return {};
+  }
+
+  // For fixed tournaments with only rounds changed, regenerate the schedule with new round count
+  if (!participantsChanged && tournament.teamMode === "fixed" && numRounds !== tournament.numRounds) {
+    const matchRows = await db.select({ id: matches.id }).from(matches).where(eq(matches.tournamentId, tournamentId));
+    const matchIds = matchRows.map((m) => m.id);
+    if (matchIds.length > 0) {
+      await db.delete(matchParticipants).where(inArray(matchParticipants.matchId, matchIds));
+      await db.delete(matches).where(inArray(matches.id, matchIds));
+    }
+
+    const teams: [string, string][] = [];
+    for (let i = 0; i < participantIds.length; i += 2) {
+      if (i + 1 < participantIds.length) {
+        teams.push([participantIds[i], participantIds[i + 1]]);
+      }
+    }
+    const schedule = generateFixedDoublesSchedule(teams, tournament.numCourts, numRounds);
+
+    await db.update(tournaments).set({ numRounds }).where(eq(tournaments.id, tournamentId));
+
+    for (const scheduledMatch of schedule) {
+      const [insertedMatch] = await db
+        .insert(matches)
+        .values({
+          tournamentId,
+          courtNumber: scheduledMatch.courtNumber,
+          roundNumber: scheduledMatch.roundNumber,
+          status: "scheduled",
+          firstServerId: scheduledMatch.firstServerId,
+        })
+        .returning();
+
+      await db.insert(matchParticipants).values([
+        ...scheduledMatch.side1PlayerIds.map((playerId) => ({ matchId: insertedMatch.id, playerId, side: 1 })),
+        ...scheduledMatch.side2PlayerIds.map((playerId) => ({ matchId: insertedMatch.id, playerId, side: 2 })),
+      ]);
+    }
+
     safeRevalidatePath("/tournaments");
     safeRevalidatePath(`/tournaments/${tournamentId}`);
     return {};
