@@ -62,7 +62,7 @@ describe("EditTournamentModal", () => {
     expect(screen.getByLabelText("Charlie")).not.toBeChecked();
   });
 
-  it("shows rounds input only for doubles format", () => {
+  it("shows a rounds input for both singles and doubles formats", () => {
     const { rerender } = render(
       <EditTournamentModal
         isOpen={true}
@@ -75,7 +75,7 @@ describe("EditTournamentModal", () => {
         matchFormat="singles"
       />
     );
-    expect(screen.queryByLabelText(/Number of Rounds/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Number of Rounds/i)).toBeInTheDocument();
 
     rerender(
       <EditTournamentModal

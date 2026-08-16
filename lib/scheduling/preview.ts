@@ -4,8 +4,17 @@ function estimateMinutes(totalMatches: number, numCourts: number, matchDurationM
   return roundsNeeded * matchDurationMinutes;
 }
 
-export function computeSinglesPreview(participantCount: number, numCourts: number, matchDurationMinutes: number) {
-  const totalMatches = participantCount < 2 ? 0 : (participantCount * (participantCount - 1)) / 2;
+export function computeSinglesPreview(
+  participantCount: number,
+  numCourts: number,
+  matchDurationMinutes: number,
+  numRounds?: number
+) {
+  if (participantCount < 2) return { totalMatches: 0, estimatedMinutes: 0 };
+  const matchesPerRound = Math.floor(participantCount / 2);
+  const naturalRounds = participantCount % 2 === 0 ? participantCount - 1 : participantCount;
+  const targetRounds = numRounds || naturalRounds;
+  const totalMatches = matchesPerRound * targetRounds;
   return { totalMatches, estimatedMinutes: estimateMinutes(totalMatches, numCourts, matchDurationMinutes) };
 }
 

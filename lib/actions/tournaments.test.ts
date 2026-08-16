@@ -64,6 +64,43 @@ describe("generateBracket", () => {
     expect(participantRows).toHaveLength(4);
   });
 
+  it("creates a singles tournament with a custom number of rounds", async () => {
+    const ids = await insertTestPlayers(4); // natural round-robin = 3 rounds
+
+    const formData = new FormData();
+    formData.set("name", "__Bracket Singles Custom Rounds__");
+    formData.set("numCourts", "2");
+    formData.set("matchDurationMinutes", "30");
+    formData.set("matchFormat", "singles");
+    formData.set("numRounds", "2");
+    ids.forEach((id) => formData.append("participantIds", id));
+
+    const tournamentId = await generateBracketId(formData);
+    createdTournamentIds.push(tournamentId);
+
+    const [tournamentRow] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
+    expect(tournamentRow.numRounds).toBe(2);
+
+    const matchRows = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
+    expect(matchRows).toHaveLength(4); // 2 matches/round * 2 rounds
+    expect(new Set(matchRows.map((m) => m.roundNumber))).toEqual(new Set([1, 2]));
+  });
+
+  it("rejects a singles round count that isn't a positive integer", async () => {
+    const ids = await insertTestPlayers(4);
+
+    const formData = new FormData();
+    formData.set("name", "__Bracket Singles Bad Rounds__");
+    formData.set("numCourts", "2");
+    formData.set("matchDurationMinutes", "30");
+    formData.set("matchFormat", "singles");
+    formData.set("numRounds", "0");
+    ids.forEach((id) => formData.append("participantIds", id));
+
+    const result = await generateBracket(formData);
+    expect("error" in result && result.error).toBe("Number of rounds must be at least 1");
+  });
+
   it("creates a fixed-team doubles tournament from submitted team pairs", async () => {
     const ids = await insertTestPlayers(4); // 2 teams of 2
 
@@ -188,7 +225,7 @@ describe("generateBracket", () => {
     const [originalMatch] = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
     expect(originalMatch).toBeDefined();
 
-    const editResult = await editTournament(tournamentId, [p1.id, p2.id, p3.id], 1);
+    const editResult = await editTournament(tournamentId, [p1.id, p2.id, p3.id], 3);
     expect(editResult.error).toBeUndefined();
 
     const [updatedTournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
@@ -197,7 +234,31 @@ describe("generateBracket", () => {
     expect(new Set(participants.map(p => p.playerId))).toEqual(new Set([p1.id, p2.id, p3.id]));
 
     const newMatches = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
-    expect(newMatches).toHaveLength(3); // C(3,2) for singles
+    expect(newMatches).toHaveLength(3); // C(3,2) for singles, matching the natural 3-round count
+  });
+
+  it("regenerates a singles schedule with a new round count on edit", async () => {
+    const ids = await insertTestPlayers(4); // natural round-robin = 3 rounds
+
+    const formData = new FormData();
+    formData.set("name", "__Edit Singles Rounds__");
+    formData.set("numCourts", "1");
+    formData.set("matchDurationMinutes", "30");
+    formData.set("matchFormat", "singles");
+    ids.forEach((id) => formData.append("participantIds", id));
+
+    const tournamentId = await generateBracketId(formData);
+    createdTournamentIds.push(tournamentId);
+
+    const editResult = await editTournament(tournamentId, ids, 2);
+    expect(editResult.error).toBeUndefined();
+
+    const [updatedTournament] = await db.select().from(tournaments).where(eq(tournaments.id, tournamentId));
+    expect(updatedTournament.numRounds).toBe(2);
+
+    const newMatches = await db.select().from(matches).where(eq(matches.tournamentId, tournamentId));
+    expect(newMatches).toHaveLength(4); // 2 matches/round * 2 rounds
+    expect(new Set(newMatches.map((m) => m.roundNumber))).toEqual(new Set([1, 2]));
   });
 
   it("rejects edit if fewer than 2 participants", async () => {

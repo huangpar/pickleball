@@ -32,6 +32,7 @@ export function RoundRobinSetupForm({
   const [matchFormat, setMatchFormat] = useState<MatchFormat>("singles");
   const [teamMode, setTeamMode] = useState<TeamMode>("fixed");
   const [numRounds, setNumRounds] = useState<number | "">(12);
+  const [singlesNumRounds, setSinglesNumRounds] = useState<number | "">("");
   const [availablePlayers, setAvailablePlayers] = useState<PlayerRow[]>(initialPlayers);
   const [selectedOrder, setSelectedOrder] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +59,8 @@ export function RoundRobinSetupForm({
     const courts = numCourts === "" ? 0 : numCourts;
     const rounds = numRounds === "" ? 0 : numRounds;
     if (matchFormat === "singles") {
-      return computeSinglesPreview(selectedOrder.length, courts, matchDurationMinutes);
+      const singlesRounds = singlesNumRounds === "" ? undefined : singlesNumRounds;
+      return computeSinglesPreview(selectedOrder.length, courts, matchDurationMinutes, singlesRounds);
     }
     if (teamMode === "fixed") {
       return computeFixedDoublesPreview(fixedTeams.length, courts, matchDurationMinutes);
@@ -74,6 +76,7 @@ export function RoundRobinSetupForm({
     numCourts,
     matchDurationMinutes,
     numRounds,
+    singlesNumRounds,
     fixedTeams.length,
     lockedPairs.length,
     rotatingPlayerIds.length,
@@ -113,7 +116,11 @@ export function RoundRobinSetupForm({
       formData.set("matchFormat", matchFormat);
       selectedOrder.forEach((id) => formData.append("participantIds", id));
 
-      if (matchFormat === "doubles") {
+      if (matchFormat === "singles") {
+        if (singlesNumRounds !== "") {
+          formData.set("numRounds", String(singlesNumRounds));
+        }
+      } else if (matchFormat === "doubles") {
         formData.set("teamMode", teamMode);
         if (teamMode === "rotating") {
           formData.set("numRounds", String(numRounds));
@@ -197,6 +204,20 @@ export function RoundRobinSetupForm({
             Doubles
           </label>
         </fieldset>
+
+        {matchFormat === "singles" && (
+          <label className="flex flex-col text-sm gap-1">
+            Number of Rounds
+            <input
+              type="number"
+              min={1}
+              placeholder="Full round robin"
+              value={singlesNumRounds}
+              onChange={(e) => setSinglesNumRounds(e.target.value === "" ? "" : Number(e.target.value))}
+              className="border border-outline-variant rounded px-3 py-2"
+            />
+          </label>
+        )}
 
         {matchFormat === "doubles" && (
           <>

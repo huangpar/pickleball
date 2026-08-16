@@ -33,6 +33,79 @@ describe("players data layer", () => {
     expect(fetched?.name).toBe("__Test Player One__");
   });
 
+  it("getAllPlayers returns players sorted alphabetically by name", async () => {
+    const [pz] = await db.insert(players).values({ name: "__ZZZ Alpha Test__" }).returning();
+    const [pa] = await db.insert(players).values({ name: "__AAA Alpha Test__" }).returning();
+    const [pm] = await db.insert(players).values({ name: "__MMM Alpha Test__" }).returning();
+    insertedPlayerIds.push(pz.id, pa.id, pm.id);
+
+    const all = await getAllPlayers();
+    const testNames = all.map((p) => p.name).filter((name) => name.includes("Alpha Test"));
+    expect(testNames).toEqual(["__AAA Alpha Test__", "__MMM Alpha Test__", "__ZZZ Alpha Test__"]);
+  });
+
+  it("getPlayerMatchOutcomes filters by tournament match format when specified", async () => {
+    const [p1] = await db.insert(players).values({ name: "__Format Filter P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Format Filter P2__" }).returning();
+    insertedPlayerIds.push(p1.id, p2.id);
+
+    const [singlesTournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Format Filter Singles__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles" })
+      .returning();
+    const [doublesTournament] = await db
+      .insert(tournaments)
+      .values({
+        name: "__Format Filter Doubles__",
+        numCourts: 1,
+        matchDurationMinutes: 30,
+        matchFormat: "doubles",
+        teamMode: "fixed",
+      })
+      .returning();
+    insertedTournamentIds.push(singlesTournament.id, doublesTournament.id);
+
+    const [singlesMatch] = await db
+      .insert(matches)
+      .values({
+        tournamentId: singlesTournament.id,
+        courtNumber: 1,
+        roundNumber: 1,
+        side1Score: 11,
+        side2Score: 5,
+        status: "final",
+        playedAt: new Date(),
+      })
+      .returning();
+    const [doublesMatch] = await db
+      .insert(matches)
+      .values({
+        tournamentId: doublesTournament.id,
+        courtNumber: 1,
+        roundNumber: 1,
+        side1Score: 11,
+        side2Score: 5,
+        status: "final",
+        playedAt: new Date(),
+      })
+      .returning();
+    insertedMatchIds.push(singlesMatch.id, doublesMatch.id);
+
+    await db.insert(matchParticipants).values([
+      { matchId: singlesMatch.id, playerId: p1.id, side: 1 },
+      { matchId: singlesMatch.id, playerId: p2.id, side: 2 },
+      { matchId: doublesMatch.id, playerId: p1.id, side: 1 },
+      { matchId: doublesMatch.id, playerId: p2.id, side: 2 },
+    ]);
+
+    const singlesOnly = await getPlayerMatchOutcomes(p1.id, undefined, "singles");
+    expect(singlesOnly).toHaveLength(1);
+    expect(singlesOnly[0].matchId).toBe(singlesMatch.id);
+
+    const all = await getPlayerMatchOutcomes(p1.id);
+    expect(all).toHaveLength(2);
+  });
+
   it("getPlayerMatchOutcomes returns only final matches, sorted ascending, with correct win/loss", async () => {
     const [p1] = await db.insert(players).values({ name: "__Test Player Two__" }).returning();
     const [p2] = await db.insert(players).values({ name: "__Test Player Three__" }).returning();

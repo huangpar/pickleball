@@ -26,6 +26,49 @@ describe("RoundRobinSetupForm", () => {
     expect(screen.getByText(/6 matches/i)).toBeInTheDocument(); // C(4,2)
   });
 
+  it("shows a Number of Rounds field for singles that defaults to a full round robin", () => {
+    render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={vi.fn()} onCreatePlayer={vi.fn()} />);
+
+    fireEvent.click(screen.getByLabelText("Alex Sterling"));
+    fireEvent.click(screen.getByLabelText("Ben Rivera"));
+    fireEvent.click(screen.getByLabelText("Chris Jung"));
+    fireEvent.click(screen.getByLabelText("Dana Kim"));
+
+    const roundsInput = screen.getByLabelText(/Number of Rounds/i);
+    expect(roundsInput).toHaveValue(null); // blank by default -> full round robin
+    expect(screen.getByText(/6 matches/i)).toBeInTheDocument(); // C(4,2)
+
+    fireEvent.change(roundsInput, { target: { value: "2" } });
+    expect(screen.getByText(/4 matches/i)).toBeInTheDocument(); // 2 matches/round * 2 rounds
+  });
+
+  it("omits numRounds from the submission when the singles rounds field is left blank", async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ tournamentId: "t1" });
+    render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={onSubmit} onCreatePlayer={vi.fn()} />);
+
+    fireEvent.click(screen.getByLabelText("Alex Sterling"));
+    fireEvent.click(screen.getByLabelText("Ben Rivera"));
+    fireEvent.click(screen.getByRole("button", { name: /generate bracket/i }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const formData = onSubmit.mock.calls[0][0] as FormData;
+    expect(formData.get("numRounds")).toBeNull();
+  });
+
+  it("includes a custom numRounds in the submission for singles when set", async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ tournamentId: "t1" });
+    render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={onSubmit} onCreatePlayer={vi.fn()} />);
+
+    fireEvent.click(screen.getByLabelText("Alex Sterling"));
+    fireEvent.click(screen.getByLabelText("Ben Rivera"));
+    fireEvent.change(screen.getByLabelText(/Number of Rounds/i), { target: { value: "5" } });
+    fireEvent.click(screen.getByRole("button", { name: /generate bracket/i }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const formData = onSubmit.mock.calls[0][0] as FormData;
+    expect(formData.get("numRounds")).toBe("5");
+  });
+
   it("pairs selected participants into teams in selection order for fixed-team doubles", () => {
     render(<RoundRobinSetupForm initialPlayers={initialPlayers} onSubmit={vi.fn()} onCreatePlayer={vi.fn()} />);
 

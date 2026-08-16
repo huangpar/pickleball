@@ -79,20 +79,18 @@ export function EditTournamentModal({
               />
             </div>
 
-            {matchFormat === "doubles" && (
-              <div>
-                <label className="flex flex-col text-sm gap-1">
-                  Number of Rounds
-                  <input
-                    type="number"
-                    min={1}
-                    value={numRounds}
-                    onChange={(e) => setNumRounds(e.target.value === "" ? "" : Number(e.target.value))}
-                    className="border border-outline-variant rounded px-3 py-2"
-                  />
-                </label>
-              </div>
-            )}
+            <div>
+              <label className="flex flex-col text-sm gap-1">
+                Number of Rounds
+                <input
+                  type="number"
+                  min={1}
+                  value={numRounds}
+                  onChange={(e) => setNumRounds(e.target.value === "" ? "" : Number(e.target.value))}
+                  className="border border-outline-variant rounded px-3 py-2"
+                />
+              </label>
+            </div>
 
             {error && <p className="text-error text-sm">{error}</p>}
           </div>

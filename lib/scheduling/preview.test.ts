@@ -16,6 +16,16 @@ describe("computeSinglesPreview", () => {
   it("returns zero matches for fewer than 2 participants", () => {
     expect(computeSinglesPreview(1, 2, 30)).toEqual({ totalMatches: 0, estimatedMinutes: 0 });
   });
+
+  it("uses a custom round count instead of the natural round-robin length", () => {
+    const result = computeSinglesPreview(4, 2, 30, 2); // 2 matches/round * 2 rounds
+    expect(result.totalMatches).toBe(4);
+  });
+
+  it("scales past the natural round-robin length when more rounds are requested", () => {
+    const result = computeSinglesPreview(4, 2, 30, 5); // 2 matches/round * 5 rounds
+    expect(result.totalMatches).toBe(10);
+  });
 });
 
 describe("computeFixedDoublesPreview", () => {

@@ -255,4 +255,68 @@ describe("getStandings", () => {
 
     expect(row?.pointDifferential).toBe(-2); // 10-8 + 7-11 = 2 - 4 = -2
   });
+
+  it("filters standings by match format", async () => {
+    const [p1] = await db.insert(players).values({ name: "__Standings Format P1__" }).returning();
+    const [p2] = await db.insert(players).values({ name: "__Standings Format P2__" }).returning();
+    insertedPlayerIds.push(p1.id, p2.id);
+
+    const [singlesTournament] = await db
+      .insert(tournaments)
+      .values({ name: "__Format Singles Tournament__", numCourts: 1, matchDurationMinutes: 30, matchFormat: "singles" })
+      .returning();
+    const [doublesTournament] = await db
+      .insert(tournaments)
+      .values({
+        name: "__Format Doubles Tournament__",
+        numCourts: 1,
+        matchDurationMinutes: 30,
+        matchFormat: "doubles",
+        teamMode: "fixed",
+      })
+      .returning();
+    insertedTournamentIds.push(singlesTournament.id, doublesTournament.id);
+
+    const [singlesMatch] = await db
+      .insert(matches)
+      .values({
+        tournamentId: singlesTournament.id,
+        courtNumber: 1,
+        roundNumber: 1,
+        side1Score: 11,
+        side2Score: 4,
+        status: "final",
+        playedAt: new Date(),
+      })
+      .returning();
+    const [doublesMatch] = await db
+      .insert(matches)
+      .values({
+        tournamentId: doublesTournament.id,
+        courtNumber: 1,
+        roundNumber: 1,
+        side1Score: 11,
+        side2Score: 4,
+        status: "final",
+        playedAt: new Date(),
+      })
+      .returning();
+    insertedMatchIds.push(singlesMatch.id, doublesMatch.id);
+
+    await db.insert(matchParticipants).values([
+      { matchId: singlesMatch.id, playerId: p1.id, side: 1 },
+      { matchId: singlesMatch.id, playerId: p2.id, side: 2 },
+      { matchId: doublesMatch.id, playerId: p1.id, side: 1 },
+      { matchId: doublesMatch.id, playerId: p2.id, side: 2 },
+    ]);
+
+    const singlesOnly = await getStandings(undefined, "singles");
+    expect(singlesOnly.find((s) => s.id === p1.id)?.matchesPlayed).toBe(1);
+
+    const doublesOnly = await getStandings(undefined, "doubles");
+    expect(doublesOnly.find((s) => s.id === p1.id)?.matchesPlayed).toBe(1);
+
+    const overall = await getStandings();
+    expect(overall.find((s) => s.id === p1.id)?.matchesPlayed).toBe(2);
+  });
 });

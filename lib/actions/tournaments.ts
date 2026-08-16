@@ -31,7 +31,12 @@ export async function generateBracket(formData: FormData): Promise<{ tournamentI
   let numRounds: number | null = null;
 
   if (matchFormat === "singles") {
-    schedule = generateSinglesSchedule(uniqueParticipantIds, numCourts);
+    const numRoundsRaw = formData.get("numRounds");
+    if (numRoundsRaw !== null && String(numRoundsRaw).trim() !== "") {
+      numRounds = Number(numRoundsRaw);
+      if (!Number.isInteger(numRounds) || numRounds < 1) return { error: "Number of rounds must be at least 1" };
+    }
+    schedule = generateSinglesSchedule(uniqueParticipantIds, numCourts, numRounds);
   } else {
     teamMode = String(formData.get("teamMode")) as "fixed" | "rotating" | "hybrid";
     if (teamMode !== "fixed" && teamMode !== "rotating" && teamMode !== "hybrid") {
@@ -239,7 +244,7 @@ export async function editTournament(
 
   let schedule: ScheduledMatch[];
   if (tournament.matchFormat === "singles") {
-    schedule = generateSinglesSchedule(participantIds, tournament.numCourts);
+    schedule = generateSinglesSchedule(participantIds, tournament.numCourts, numRounds);
   } else if (tournament.teamMode === "fixed") {
     // Pair participants in order: [0,1], [2,3], [4,5], etc.
     const teams: [string, string][] = [];

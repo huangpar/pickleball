@@ -1,6 +1,6 @@
 import { db } from "@/lib/db/client";
 import { players, matches, matchParticipants, tournaments } from "@/lib/db/schema";
-import { eq, and, gte, lte, type SQL } from "drizzle-orm";
+import { eq, and, gte, lte, asc, type SQL } from "drizzle-orm";
 import type { MatchOutcome } from "@/lib/stats";
 
 export interface PlayerRow {
@@ -26,7 +26,7 @@ export interface PlayerMatchOutcome {
 }
 
 export async function getAllPlayers(): Promise<PlayerRow[]> {
-  return db.select({ id: players.id, name: players.name }).from(players);
+  return db.select({ id: players.id, name: players.name }).from(players).orderBy(asc(players.name));
 }
 
 export async function getPlayerById(id: string): Promise<PlayerRow | null> {
@@ -37,10 +37,15 @@ export async function getPlayerById(id: string): Promise<PlayerRow | null> {
   return rows[0] ?? null;
 }
 
-export async function getPlayerMatchOutcomes(playerId: string, dateRange?: DateRange): Promise<PlayerMatchOutcome[]> {
+export async function getPlayerMatchOutcomes(
+  playerId: string,
+  dateRange?: DateRange,
+  matchFormat?: "singles" | "doubles"
+): Promise<PlayerMatchOutcome[]> {
   const conditions: SQL[] = [eq(matchParticipants.playerId, playerId), eq(matches.status, "final")];
   if (dateRange?.from) conditions.push(gte(tournaments.startedAt, dateRange.from));
   if (dateRange?.to) conditions.push(lte(tournaments.startedAt, dateRange.to));
+  if (matchFormat) conditions.push(eq(tournaments.matchFormat, matchFormat));
 
   const rows = await db
     .select({

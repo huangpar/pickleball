@@ -10,6 +10,7 @@ import { Button } from "@/components/Button";
 import { startTournament, deleteTournament } from "@/lib/actions/tournaments";
 import { endTournament } from "@/lib/actions/matches";
 import { createPlayer } from "@/lib/actions/players";
+import { naturalSinglesRoundCount } from "@/lib/scheduling/singles";
 import type { TournamentDetail } from "@/lib/data/tournamentDetail";
 import type { PlayerRow } from "@/lib/data/players";
 
@@ -48,7 +49,10 @@ export function TournamentDetailActions({
         onClose={() => setIsEditOpen(false)}
         tournamentId={tournament.id}
         currentParticipantIds={tournament.participants.map((p) => p.id)}
-        currentRounds={tournament.numRounds || 4}
+        currentRounds={
+          tournament.numRounds ??
+          (tournament.matchFormat === "singles" ? naturalSinglesRoundCount(tournament.participants.length) : 4)
+        }
         availablePlayers={availablePlayers}
         onCreatePlayer={createPlayer}
         matchFormat={tournament.matchFormat as "singles" | "doubles"}
