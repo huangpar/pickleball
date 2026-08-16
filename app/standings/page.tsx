@@ -1,6 +1,7 @@
 import { getStandings } from "@/lib/data/standings";
 import { StandingsTable } from "@/components/standings/StandingsTable";
 import { Button } from "@/components/Button";
+import { Tabs } from "@/components/Tabs";
 
 export default async function StandingsPage({
   searchParams,
@@ -12,13 +13,13 @@ export default async function StandingsPage({
     from: from ? new Date(`${from}T00:00:00`) : undefined,
     to: to ? new Date(`${to}T23:59:59.999`) : undefined,
   };
-  const [standings, singlesStandings] = await Promise.all([
-    getStandings(dateRange),
+  const [singlesStandings, doublesStandings] = await Promise.all([
     getStandings(dateRange, "singles"),
+    getStandings(dateRange, "doubles"),
   ]);
 
   return (
-    <main className="max-w-container-max mx-auto px-gutter py-8 space-y-10">
+    <main className="max-w-container-max mx-auto px-gutter py-8 space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="font-headline text-3xl font-bold">Standings</h1>
         <form className="flex flex-wrap items-end gap-3">
@@ -51,15 +52,20 @@ export default async function StandingsPage({
         </form>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="font-headline text-xl font-semibold">Overall</h2>
-        <StandingsTable initialStandings={standings} />
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="font-headline text-xl font-semibold">Singles</h2>
-        <StandingsTable initialStandings={singlesStandings} />
-      </div>
+      <Tabs
+        tabs={[
+          {
+            id: "singles",
+            label: "Singles",
+            content: <StandingsTable initialStandings={singlesStandings} />,
+          },
+          {
+            id: "doubles",
+            label: "Doubles",
+            content: <StandingsTable initialStandings={doublesStandings} />,
+          },
+        ]}
+      />
     </main>
   );
 }
